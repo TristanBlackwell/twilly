@@ -1,12 +1,13 @@
 use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Text};
+use serde::{Deserialize, Serialize};
 
-pub struct Config {
+pub struct TwilioConfig {
     pub account_sid: String,
     pub auth_token: String,
 }
 
-impl Config {
-    pub fn build() -> Result<Config, InquireError> {
+impl TwilioConfig {
+    pub fn build() -> Result<TwilioConfig, InquireError> {
         println!("Lets start with an account.");
 
         let account_sid = Text::new("Please provide an account SID:")
@@ -36,17 +37,71 @@ impl Config {
             .with_help_message("Input is masked. Use Ctrl + R to toggle visibility.")
             .prompt()?;
 
-        Ok(Config {
+        Ok(TwilioConfig {
             account_sid,
             auth_token,
         })
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+struct Twilio {
+    config: TwilioConfig,
+    client: reqwest::blocking::Client,
+}
 
-    #[test]
-    fn accounts_sid_must_start_with_ac_and_is_valid_length() {}
+#[derive(Debug, Serialize, Deserialize)]
+struct Account {
+    sid: String,
+    friendly_name: String,
+    status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Error {
+    code: u32,
+    message: String,
+    more_info: String,
+    status: u16,
+}
+
+impl Twilio {
+    fn new(config: TwilioConfig) -> Twilio {
+        Twilio {
+            config,
+            client: reqwest::blocking::Client::new(),
+        }
+    }
+
+    fn get_account(&self) -> Result<Account, reqwest::Error> {
+        let account: Account = self
+            .client
+            .get(format!(
+                "https://api.twilio.com/2010-04-01/Accounts/{}.json",
+                self.config.account_sid
+            ))
+            .send()?
+            .json()?;
+
+        Ok(account)
+    }
+
+    // fn send_request(&self, method: Method, endpoint: &str) {
+    // 	let url = format!("https://api.twilio.com/2010-04-01/Accounts/{}/{}.json")
+    // }
+}
+
+pub fn run(config: TwilioConfig) -> Result<(), Error> {
+    println!(
+        "Generating Twilio Client for account: {}",
+        &config.account_sid
+    );
+
+    let twilio = Twilio::new(config);
+
+    println!("Checking account...");
+    let account = twilio.get_account()?;
+
+    println!("Account = {:#?}", account);
+
+    Ok(())
 }

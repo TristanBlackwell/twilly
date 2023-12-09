@@ -1,11 +1,11 @@
 use std::process;
 
-use twilio_rust::Config;
+use twilio_rust::{run, TwilioConfig};
 
 fn main() {
     println!("Welcome to Twilio Rust! I'm here to help you interact with Twilio!");
 
-    let config = Config::build().unwrap_or_else(|err| match err {
+    let config = TwilioConfig::build().unwrap_or_else(|err| match err {
         inquire::InquireError::OperationCanceled | inquire::InquireError::OperationInterrupted => {
             eprintln!("Operation was cancelled or interrupted. Closing program.");
             process::exit(130);
@@ -29,4 +29,6 @@ fn main() {
             );
         }
     });
+
+    run(config).unwrap_or_else(|err| println!("Error caught during run: {}", err));
 }
