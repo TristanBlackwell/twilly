@@ -73,12 +73,12 @@ pub enum ErrorKind {
 }
 
 impl ErrorKind {
-    fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> String {
         match self {
-            ErrorKind::NetworkError => "Network error reaching Twilio.",
-            ErrorKind::ParsingError => "Unable to parse response.",
+            ErrorKind::NetworkError => "Network error reaching Twilio.".to_string(),
+            ErrorKind::ParsingError => "Unable to parse response.".to_string(),
             ErrorKind::TwilioError(error) => {
-                format!("Error response from Twilio: {}", &error).as_str()
+                format!("Error response from Twilio: {}", &error)
             }
         }
     }
@@ -198,7 +198,12 @@ pub fn run(config: TwilioConfig) -> Result<(), TwilioApiError> {
     println!("Checking account...");
     let account = twilio.get_account();
     match account {
-        Ok(_) => println!("✅ Account details good!"),
+        Ok(account) => {
+            println!(
+                "✅ Account details good! {} ({} - {})",
+                account.friendly_name, account.type_field, account.status
+            );
+        }
         Err(err) => {
             panic!("Account check failed: {}", err)
         }
