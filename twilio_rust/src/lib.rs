@@ -1,53 +1,45 @@
+mod account;
+
 use std::fmt;
 
-use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Text};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
+/// Account SID & auth token pair required for
+/// authenticating requests to Twilio.
 pub struct TwilioConfig {
     pub account_sid: String,
     pub auth_token: String,
 }
 
 impl TwilioConfig {
-    pub fn build() -> Result<TwilioConfig, InquireError> {
-        println!("Lets start with an account.");
+    pub fn build(account_sid: String, auth_token: String) -> TwilioConfig {
+        if !account_sid.starts_with("AC") {
+            panic!("Account SID must start with AC");
+        } else if account_sid.len() != 34 {
+            panic!(
+                "Account SID should be 34 characters in length. Was {}",
+                account_sid.len()
+            )
+        }
 
-        let account_sid = Text::new("Please provide an account SID:")
-            .with_placeholder("AC...")
-            .with_validator(|val: &str| match val.starts_with("AC") {
-                true => Ok(Validation::Valid),
-                false => Ok(Validation::Invalid("Account SID must start with AC".into())),
-            })
-            .with_validator(|val: &str| match val.len() {
-                34 => Ok(Validation::Valid),
-                _ => Ok(Validation::Invalid(
-                    "Your SID should be 34 characters in length".into(),
-                )),
-            })
-            .prompt()?;
+        if auth_token.len() != 32 {
+            panic!(
+                "Auth token should be 32 characters in length. Was {}",
+                auth_token.len()
+            )
+        }
 
-        let auth_token = Password::new("Provide the auth token (input hidden):")
-            .with_validator(|val: &str| match val.len() {
-                32 => Ok(Validation::Valid),
-                _ => Ok(Validation::Invalid(
-                    "Your SID should be 32 characters in length".into(),
-                )),
-            })
-            .with_display_mode(PasswordDisplayMode::Masked)
-            .with_display_toggle_enabled()
-            .without_confirmation()
-            .with_help_message("Input is masked. Use Ctrl + R to toggle visibility.")
-            .prompt()?;
-
-        Ok(TwilioConfig {
+        TwilioConfig {
             account_sid,
             auth_token,
-        })
+        }
     }
 }
 
-struct Twilio {
+/// The Twilio client used for interaction with
+/// Twilio's API
+pub struct Client {
     config: TwilioConfig,
     client: reqwest::blocking::Client,
 }
@@ -118,39 +110,20 @@ impl fmt::Display for SubResource {
     }
 }
 
-/// Details related to a specific account.
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct Account {
-    status: String,
-    date_updated: String,
-    auth_token: String,
-    friendly_name: String,
-    owner_account_sid: String,
-    uri: String,
-    sid: String,
-    date_created: String,
-    #[serde(rename = "type")]
-    type_field: String,
-}
-
-impl Twilio {
-    fn new(config: TwilioConfig) -> Twilio {
-        Twilio {
+impl Client {
+    pub fn new(config: TwilioConfig) -> Client {
+        Client {
             config,
             client: reqwest::blocking::Client::new(),
         }
     }
 
-    fn get_account(&self) -> Result<Account, TwilioError> {
-        let account = self.send_request::<Account>(Method::GET, SubResource::Account);
-
-        account
-    }
-
     /// Dispatches a request to Twilio and handles parsing the response.
     ///
     /// Will return a result of either the resource type or one of the
-    /// possible errors ([`Error`])
+    /// possible errors ([`Error`]).
+    ///
+    /// This method may throw on failed network requests.
     fn send_request<T>(&self, method: Method, endpoint: SubResource) -> Result<T, TwilioError>
     where
         T: serde::de::DeserializeOwned,
@@ -187,27 +160,41 @@ impl Twilio {
     }
 }
 
-pub fn run(config: TwilioConfig) -> Result<(), TwilioApiError> {
-    println!(
-        "Generating Twilio Client for account: {}",
-        &config.account_sid
-    );
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let twilio = Twilio::new(config);
-
-    println!("Checking account...");
-    let account = twilio.get_account();
-    match account {
-        Ok(account) => {
-            println!(
-                "✅ Account details good! {} ({} - {})",
-                account.friendly_name, account.type_field, account.status
-            );
-        }
-        Err(err) => {
-            panic!("Account check failed: {}", err)
-        }
+    #[test]
+    #[should_panic(expected = "Account SID must start with AC")]
+    fn account_sid_regex() {
+        TwilioConfig::build(String::from("ThisisnotanaccountSID"), String::from("1234"));
     }
 
-    Ok(())
+    #[test]
+    #[should_panic(expected = "Account SID should be 34 characters in length. Was 23")]
+    fn account_sid_len() {
+        TwilioConfig::build(
+            String::from("ACThisisnotanaccountSID"),
+            String::from("1234"),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Auth token should be 32 characters in length. Was 20")]
+    fn auth_token_len() {
+        TwilioConfig::build(
+            String::from("AC11111111111111111111111111111111"),
+            String::from("11111111111111111111"),
+        );
+    }
+
+    #[test]
+    fn config_on_good_credentials() {
+        let account_sid = String::from("AC11111111111111111111111111111111");
+        let auth_token = String::from("11111111111111111111111111111111");
+        let config = TwilioConfig::build(account_sid.clone(), auth_token.clone());
+
+        assert_eq!(account_sid, config.account_sid);
+        assert_eq!(auth_token, config.auth_token);
+    }
 }
