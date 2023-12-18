@@ -9,3 +9,4 @@ edition = "2021"
 inquire = "0.6.2"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.2"

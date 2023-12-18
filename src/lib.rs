@@ -1,4 +1,7 @@
+use std::fmt;
+
 use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Text};
+use reqwest::Method;
 use serde::{Deserialize, Serialize};
 
 pub struct TwilioConfig {
@@ -26,9 +29,9 @@ impl TwilioConfig {
 
         let auth_token = Password::new("Provide the auth token (input hidden):")
             .with_validator(|val: &str| match val.len() {
-                34 => Ok(Validation::Valid),
+                32 => Ok(Validation::Valid),
                 _ => Ok(Validation::Invalid(
-                    "Your SID should be 34 characters in length".into(),
+                    "Your SID should be 32 characters in length".into(),
                 )),
             })
             .with_display_mode(PasswordDisplayMode::Masked)
@@ -49,19 +52,85 @@ struct Twilio {
     client: reqwest::blocking::Client,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Account {
-    sid: String,
-    friendly_name: String,
-    status: String,
+pub struct TwilioError {
+    kind: ErrorKind,
 }
 
+impl fmt::Display for TwilioError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.kind.as_str())
+    }
+}
+
+/// A list of possible errors from the Twilio client.
+pub enum ErrorKind {
+    /// Network related error during the request.
+    NetworkError,
+    /// Twilio returned error
+    TwilioError(TwilioApiError),
+    /// Unable to parse request or response body
+    ParsingError,
+}
+
+impl ErrorKind {
+    fn as_str(&self) -> &'static str {
+        match self {
+            ErrorKind::NetworkError => "Network error reaching Twilio.",
+            ErrorKind::ParsingError => "Unable to parse response.",
+            ErrorKind::TwilioError(error) => {
+                format!("Error response from Twilio: {}", &error).as_str()
+            }
+        }
+    }
+}
+
+/// Twilio error response.
 #[derive(Debug, Serialize, Deserialize)]
-struct Error {
+pub struct TwilioApiError {
+    /// Twilio specific error code
     code: u32,
+    /// Detail of the error
     message: String,
+    /// Where to find more info on the error
     more_info: String,
+    /// HTTP status code
     status: u16,
+}
+
+impl fmt::Display for TwilioApiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} from Twilio. ({}) {}. For more info see: {}",
+            self.status, self.code, self.message, self.more_info
+        )
+    }
+}
+
+pub enum SubResource {
+    Account,
+    Sync,
+}
+
+impl fmt::Display for SubResource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+/// Details related to a specific account.
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct Account {
+    status: String,
+    date_updated: String,
+    auth_token: String,
+    friendly_name: String,
+    owner_account_sid: String,
+    uri: String,
+    sid: String,
+    date_created: String,
+    #[serde(rename = "type")]
+    type_field: String,
 }
 
 impl Twilio {
@@ -72,25 +141,53 @@ impl Twilio {
         }
     }
 
-    fn get_account(&self) -> Result<Account, reqwest::Error> {
-        let account: Account = self
-            .client
-            .get(format!(
-                "https://api.twilio.com/2010-04-01/Accounts/{}.json",
-                self.config.account_sid
-            ))
-            .send()?
-            .json()?;
+    fn get_account(&self) -> Result<Account, TwilioError> {
+        let account = self.send_request::<Account>(Method::GET, SubResource::Account);
 
-        Ok(account)
+        account
     }
 
-    // fn send_request(&self, method: Method, endpoint: &str) {
-    // 	let url = format!("https://api.twilio.com/2010-04-01/Accounts/{}/{}.json")
-    // }
+    /// Dispatches a request to Twilio and handles parsing the response.
+    ///
+    /// Will return a result of either the resource type or one of the
+    /// possible errors ([`Error`])
+    fn send_request<T>(&self, method: Method, endpoint: SubResource) -> Result<T, TwilioError>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let url = match endpoint {
+            SubResource::Account => format!(
+                "https://api.twilio.com/2010-04-01/Accounts/{}.json",
+                self.config.account_sid
+            ),
+            _ => format!(
+                "https://api.twilio.com/2010-04-01/Accounts/{}/{}.json",
+                self.config.account_sid, endpoint
+            ),
+        };
+
+        let response = self
+            .client
+            .request(method, url)
+            .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+            .send()
+            .unwrap();
+
+        match reqwest::StatusCode::OK {
+            reqwest::StatusCode::OK => response.json::<T>().map_err(|_| TwilioError {
+                kind: ErrorKind::ParsingError,
+            }),
+            _ => match response.json::<TwilioApiError>() {
+                Ok(parsed) => Err(TwilioError {
+                    kind: ErrorKind::TwilioError(parsed),
+                }),
+                Err(_) => panic!("Err!"),
+            },
+        }
+    }
 }
 
-pub fn run(config: TwilioConfig) -> Result<(), Error> {
+pub fn run(config: TwilioConfig) -> Result<(), TwilioApiError> {
     println!(
         "Generating Twilio Client for account: {}",
         &config.account_sid
@@ -99,9 +196,13 @@ pub fn run(config: TwilioConfig) -> Result<(), Error> {
     let twilio = Twilio::new(config);
 
     println!("Checking account...");
-    let account = twilio.get_account()?;
-
-    println!("Account = {:#?}", account);
+    let account = twilio.get_account();
+    match account {
+        Ok(_) => println!("✅ Account details good!"),
+        Err(err) => {
+            panic!("Account check failed: {}", err)
+        }
+    }
 
     Ok(())
 }
