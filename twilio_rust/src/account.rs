@@ -25,4 +25,8 @@ impl Client {
 
         account
     }
+
+    pub fn create_account(&self, friendlyName: Option<&str>) -> Result<Account, TwilioError> {
+        let created_account = self.send_request::<Account>(Method::POST, SubResource::Account);
+    }
 }

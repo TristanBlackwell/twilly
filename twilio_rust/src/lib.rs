@@ -57,18 +57,18 @@ impl fmt::Display for TwilioError {
 /// A list of possible errors from the Twilio client.
 pub enum ErrorKind {
     /// Network related error during the request.
-    NetworkError,
+    NetworkError(reqwest::Error),
     /// Twilio returned error
     TwilioError(TwilioApiError),
     /// Unable to parse request or response body
-    ParsingError,
+    ParsingError(reqwest::Error),
 }
 
 impl ErrorKind {
     fn as_str(&self) -> String {
         match self {
-            ErrorKind::NetworkError => "Network error reaching Twilio.".to_string(),
-            ErrorKind::ParsingError => "Unable to parse response.".to_string(),
+            ErrorKind::NetworkError(error) => format!("Network error reaching Twilio: {}", &error),
+            ErrorKind::ParsingError(error) => format!("Unable to parse response: {}", &error),
             ErrorKind::TwilioError(error) => {
                 format!("Error response from Twilio: {}", &error)
             }
@@ -111,6 +111,8 @@ impl fmt::Display for SubResource {
 }
 
 impl Client {
+    /// Create a Twilio client ready to send requests for the account matching
+    /// the details provided in `config`
     pub fn new(config: TwilioConfig) -> Client {
         Client {
             config,
@@ -122,8 +124,6 @@ impl Client {
     ///
     /// Will return a result of either the resource type or one of the
     /// possible errors ([`Error`]).
-    ///
-    /// This method may throw on failed network requests.
     fn send_request<T>(&self, method: Method, endpoint: SubResource) -> Result<T, TwilioError>
     where
         T: serde::de::DeserializeOwned,
@@ -139,23 +139,37 @@ impl Client {
             ),
         };
 
-        let response = self
+        let response_result = self
             .client
             .request(method, url)
             .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
-            .send()
-            .unwrap();
+            .send();
 
-        match reqwest::StatusCode::OK {
-            reqwest::StatusCode::OK => response.json::<T>().map_err(|_| TwilioError {
-                kind: ErrorKind::ParsingError,
+        let response = match response_result {
+            Ok(res) => res,
+            Err(error) => {
+                return Err(TwilioError {
+                    kind: ErrorKind::NetworkError(error),
+                })
+            }
+        };
+
+        match response.status() {
+            reqwest::StatusCode::OK => response.json::<T>().map_err(|error| TwilioError {
+                kind: ErrorKind::ParsingError(error),
             }),
-            _ => match response.json::<TwilioApiError>() {
-                Ok(parsed) => Err(TwilioError {
-                    kind: ErrorKind::TwilioError(parsed),
-                }),
-                Err(_) => panic!("Err!"),
-            },
+            _ => {
+                let parsed_twilio_error = response.json::<TwilioApiError>();
+
+                match parsed_twilio_error {
+                    Ok(twilio_error) => Err(TwilioError {
+                        kind: ErrorKind::TwilioError(twilio_error),
+                    }),
+                    Err(error) => Err(TwilioError {
+                        kind: ErrorKind::ParsingError(error),
+                    }),
+                }
+            }
         }
     }
 }
