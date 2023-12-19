@@ -1,5 +1,7 @@
-use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Text};
-use twilio_rust::TwilioConfig;
+use std::{fmt, str::FromStr};
+
+use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Select, Text};
+use twilio_rust::{SubResource, TwilioConfig};
 
 pub fn request_credentials() -> Result<TwilioConfig, InquireError> {
     let account_sid = Text::new("Please provide an account SID:")
@@ -30,4 +32,41 @@ pub fn request_credentials() -> Result<TwilioConfig, InquireError> {
         .prompt()?;
 
     Ok(TwilioConfig::build(account_sid, auth_token))
+}
+
+pub fn choose_resource() -> SubResource {
+    let options = vec!["Account", "Sync"];
+    let sub_resource = Select::new("Select a resource:", options).prompt();
+
+    SubResource::from_str(sub_resource.unwrap()).unwrap()
+}
+
+pub enum Action {
+    GetAccount,
+    CreateAccount,
+}
+
+impl FromStr for Action {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Get account" => Ok(Action::GetAccount),
+            "Create account" => Ok(Action::CreateAccount),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for Action {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+pub fn choose_action() -> Action {
+    let options = vec!["Get account", "Create account"];
+    let action = Select::new("Select a action:", options).prompt();
+
+    Action::from_str(action.unwrap()).unwrap()
 }

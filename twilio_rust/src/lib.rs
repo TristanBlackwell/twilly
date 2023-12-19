@@ -1,6 +1,6 @@
 mod account;
 
-use std::fmt;
+use std::{collections::HashMap, fmt, str::FromStr};
 
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
@@ -99,6 +99,7 @@ impl fmt::Display for TwilioApiError {
     }
 }
 
+#[derive(PartialEq)]
 pub enum SubResource {
     Account,
     Sync,
@@ -107,6 +108,18 @@ pub enum SubResource {
 impl fmt::Display for SubResource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self)
+    }
+}
+
+impl FromStr for SubResource {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Account" => Ok(SubResource::Account),
+            "Sync" => Ok(SubResource::Sync),
+            _ => Err(()),
+        }
     }
 }
 
@@ -124,25 +137,46 @@ impl Client {
     ///
     /// Will return a result of either the resource type or one of the
     /// possible errors ([`Error`]).
-    fn send_request<T>(&self, method: Method, endpoint: SubResource) -> Result<T, TwilioError>
+    fn send_request<T>(
+        &self,
+        method: Method,
+        endpoint: SubResource,
+        params: Option<&HashMap<String, &str>>,
+    ) -> Result<T, TwilioError>
     where
         T: serde::de::DeserializeOwned,
     {
-        let url = match endpoint {
-            SubResource::Account => format!(
-                "https://api.twilio.com/2010-04-01/Accounts/{}.json",
-                self.config.account_sid
-            ),
-            _ => format!(
+        let url = if endpoint == SubResource::Account {
+            if let Some(params) = params {
+                if let Some(account_sid) = params.get("sid") {
+                    format!(
+                        "https://api.twilio.com/2010-04-01/Accounts/{}.json",
+                        account_sid
+                    )
+                } else {
+                    format!(
+                        "https://api.twilio.com/2010-04-01/Accounts/{}.json",
+                        self.config.account_sid
+                    )
+                }
+            } else {
+                format!(
+                    "https://api.twilio.com/2010-04-01/Accounts/{}.json",
+                    self.config.account_sid
+                )
+            }
+        } else {
+            format!(
                 "https://api.twilio.com/2010-04-01/Accounts/{}/{}.json",
                 self.config.account_sid, endpoint
-            ),
+            )
         };
 
         let response_result = self
             .client
             .request(method, url)
             .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+            .form(&params)
             .send();
 
         let response = match response_result {
