@@ -1,9 +1,10 @@
 mod account;
 
-use std::{collections::HashMap, fmt, str::FromStr};
+use std::{collections::HashMap, fmt};
 
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumIter, EnumString};
 
 /// Account SID & auth token pair required for
 /// authenticating requests to Twilio.
@@ -99,28 +100,10 @@ impl fmt::Display for TwilioApiError {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Display, EnumIter, EnumString, PartialEq)]
 pub enum SubResource {
     Account,
     Sync,
-}
-
-impl fmt::Display for SubResource {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
-impl FromStr for SubResource {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Account" => Ok(SubResource::Account),
-            "Sync" => Ok(SubResource::Sync),
-            _ => Err(()),
-        }
-    }
 }
 
 impl Client {
@@ -148,7 +131,13 @@ impl Client {
     {
         let url = if endpoint == SubResource::Account {
             if let Some(params) = params {
-                if let Some(account_sid) = params.get("sid") {
+                // A friendlyName param is used for sub account creation so
+                // set this endpoint
+                if let Some(_) = params.get("friendlyName") {
+                    String::from("https://api.twilio.com/2010-04-01/Accounts.json")
+                } else if let Some(account_sid) = params.get("sid") {
+                    // If we have sid passed then use this as account identifier
+                    // rather than the config account SID
                     format!(
                         "https://api.twilio.com/2010-04-01/Accounts/{}.json",
                         account_sid
@@ -160,6 +149,7 @@ impl Client {
                     )
                 }
             } else {
+                // No params so default to config account SID
                 format!(
                     "https://api.twilio.com/2010-04-01/Accounts/{}.json",
                     self.config.account_sid

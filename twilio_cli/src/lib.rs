@@ -1,4 +1,6 @@
-use std::{fmt, str::FromStr};
+use std::str::FromStr;
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter, EnumString};
 
 use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Select, Text};
 use twilio_rust::{SubResource, TwilioConfig};
@@ -35,38 +37,25 @@ pub fn request_credentials() -> Result<TwilioConfig, InquireError> {
 }
 
 pub fn choose_resource() -> SubResource {
-    let options = vec!["Account", "Sync"];
+    let options = SubResource::iter().collect();
     let sub_resource = Select::new("Select a resource:", options).prompt();
 
-    SubResource::from_str(sub_resource.unwrap()).unwrap()
+    sub_resource.unwrap()
 }
 
+#[derive(Display, EnumIter, EnumString)]
 pub enum Action {
+    #[strum(serialize = "Get account")]
     GetAccount,
+    #[strum(serialize = "Create account")]
     CreateAccount,
-}
-
-impl FromStr for Action {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Get account" => Ok(Action::GetAccount),
-            "Create account" => Ok(Action::CreateAccount),
-            _ => Err(()),
-        }
-    }
-}
-
-impl fmt::Display for Action {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
-    }
+    Back,
+    Exit,
 }
 
 pub fn choose_action() -> Action {
-    let options = vec!["Get account", "Create account"];
-    let action = Select::new("Select a action:", options).prompt();
+    let options = Action::iter().collect();
+    let action_selection = Select::new("Select an action:", options).prompt();
 
-    Action::from_str(action.unwrap()).unwrap()
+    action_selection.unwrap()
 }
