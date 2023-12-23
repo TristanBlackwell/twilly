@@ -107,8 +107,7 @@ pub enum SubResource {
 }
 
 impl Client {
-    /// Create a Twilio client ready to send requests for the account matching
-    /// the details provided in `config`
+    /// Create a Twilio client ready to send requests.
     pub fn new(config: TwilioConfig) -> Client {
         Client {
             config,
