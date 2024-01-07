@@ -46,6 +46,8 @@ pub fn choose_resource() -> SubResource {
 pub enum Action {
     #[strum(serialize = "Get account")]
     GetAccount,
+    #[strum(serialize = "List accounts")]
+    ListAccounts,
     #[strum(serialize = "Create account")]
     CreateAccount,
     Back,

@@ -4,7 +4,7 @@ use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display};
 
-use crate::{Client, SubResource, TwilioError};
+use crate::{Client, TwilioError};
 
 #[derive(Deserialize)]
 #[serde(bound = "T: Deserialize<'de>")]
@@ -53,8 +53,14 @@ impl Client {
             params.insert(String::from("sid"), sid);
         }
 
-        let account =
-            self.send_request::<Account>(Method::GET, SubResource::Account, Some(&params));
+        let account = self.send_request::<Account>(
+            Method::GET,
+            &format!(
+                "https://api.twilio.com/2010-04-01/Accounts/{}.json",
+                self.config.account_sid
+            ),
+            Some(&params),
+        );
 
         account
     }
@@ -80,33 +86,44 @@ impl Client {
             params.insert(String::from("Status"), status.as_ref());
         }
 
-        let accounts_first_page =
-            self.send_request::<Page<Account>>(Method::GET, SubResource::Account, Some(&params))?;
+        let mut accounts_page = self.send_request::<Page<Account>>(
+            Method::GET,
+            "https://api.twilio.com/2010-04-01/Accounts.json?PageSize=5",
+            Some(&params),
+        )?;
 
-        let accounts = self.page_until_end(accounts_first_page);
-        accounts
-    }
+        let mut results: Vec<Account> = accounts_page.accounts;
 
-    fn page_until_end<'de, Account>(
-        &self,
-        current_page: Page<Account>,
-    ) -> Result<Vec<Account>, TwilioError>
-    where
-        Account: Deserialize<'de>,
-    {
-        let mut res: Vec<Account> = current_page.accounts;
+        while (accounts_page.next_page_uri).is_some() {
+            let full_url = format!(
+                "https://api.twilio.com{}",
+                accounts_page.next_page_uri.unwrap()
+            );
+            accounts_page = self.send_request::<Page<Account>>(Method::GET, &full_url, None)?;
 
-        let mut next_page_uri = current_page.next_page_uri;
-        while Some(next_page_uri) != None {
-            let mut page =
-                self.send_request::<Page<Account>>(Method::GET, SubResource::Account, None)?;
-
-            res.append(&mut page.accounts);
-            next_page_uri = page.next_page_uri;
+            results.append(&mut accounts_page.accounts);
         }
 
-        Ok(res)
+        //let accounts = self.page_until_end(accounts_page);
+        Ok(results)
     }
+
+    // fn page_until_end(&self, current_page: Page<Account>) -> Result<Vec<Account>, TwilioError> {
+    //     let mut results: Vec<Account> = current_page.accounts;
+
+    //     while current_page.next_page_uri.is_some() {
+    //         let full_url = format!(
+    //             "https://api.twilio.com{}",
+    //             current_page.next_page_uri.unwrap().clone()
+    //         );
+    //         let mut page = self.send_request::<Page<Account>>(Method::GET, &full_url, None)?;
+
+    //         results.append(&mut page.accounts);
+    //         next_page_uri = page.next_page_uri;
+    //     }
+
+    //     Ok(results)
+    // }
 
     /// [Creates a sub-account](https://www.twilio.com/docs/iam/api/account#create-an-account-resource)
     /// under the authenticated Twilio account. Takes in an optional
@@ -122,6 +139,10 @@ impl Client {
             params.insert(String::from("friendlyName"), friendly_name);
         }
 
-        self.send_request::<Account>(Method::POST, SubResource::Account, Some(&params))
+        self.send_request::<Account>(
+            Method::POST,
+            "https://api.twilio.com/2010-04-01/Accounts.json",
+            Some(&params),
+        )
     }
 }

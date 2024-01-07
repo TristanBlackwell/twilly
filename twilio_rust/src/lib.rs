@@ -71,7 +71,7 @@ impl ErrorKind {
             ErrorKind::NetworkError(error) => format!("Network error reaching Twilio: {}", &error),
             ErrorKind::ParsingError(error) => format!("Unable to parse response: {}", &error),
             ErrorKind::TwilioError(error) => {
-                format!("Error response from Twilio: {}", &error)
+                format!("Error: {}", &error)
             }
         }
     }
@@ -122,45 +122,12 @@ impl Client {
     fn send_request<T>(
         &self,
         method: Method,
-        endpoint: SubResource,
+        url: &str,
         params: Option<&HashMap<String, &str>>,
     ) -> Result<T, TwilioError>
     where
         T: serde::de::DeserializeOwned,
     {
-        let url = if endpoint == SubResource::Account {
-            if let Some(params) = params {
-                // A friendlyName param is used for sub account creation so
-                // set this endpoint
-                if let Some(_) = params.get("friendlyName") {
-                    String::from("https://api.twilio.com/2010-04-01/Accounts.json")
-                } else if let Some(account_sid) = params.get("sid") {
-                    // If we have sid passed then use this as account identifier
-                    // rather than the config account SID
-                    format!(
-                        "https://api.twilio.com/2010-04-01/Accounts/{}.json",
-                        account_sid
-                    )
-                } else {
-                    format!(
-                        "https://api.twilio.com/2010-04-01/Accounts/{}.json",
-                        self.config.account_sid
-                    )
-                }
-            } else {
-                // No params so default to config account SID
-                format!(
-                    "https://api.twilio.com/2010-04-01/Accounts/{}.json",
-                    self.config.account_sid
-                )
-            }
-        } else {
-            format!(
-                "https://api.twilio.com/2010-04-01/Accounts/{}/{}.json",
-                self.config.account_sid, endpoint
-            )
-        };
-
         let response_result = self
             .client
             .request(method, url)

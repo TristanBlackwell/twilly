@@ -85,6 +85,20 @@ fn main() {
                         account.friendly_name, account.sid
                     );
                 }
+                Action::ListAccounts => {
+                    println!("Retrieving accounts...");
+                    let friendly_name = Text::new("Search by friendly name? (empty for none):")
+                        .prompt()
+                        .unwrap();
+                    let status = Text::new("Filter by status?").prompt().unwrap();
+                    let mut accounts = twilio
+                        .list_accounts(Some(&friendly_name), None)
+                        .unwrap_or_else(|error| panic!("{}", error));
+
+                    for i in accounts.iter_mut() {
+                        println!("Account {} ({})", i.friendly_name, i.sid);
+                    }
+                }
                 Action::Back => break,
                 Action::Exit => process::exit(0),
             }
