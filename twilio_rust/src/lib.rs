@@ -1,4 +1,4 @@
-mod account;
+pub mod account;
 
 use std::{collections::HashMap, fmt};
 
@@ -128,12 +128,20 @@ impl Client {
     where
         T: serde::de::DeserializeOwned,
     {
-        let response_result = self
-            .client
-            .request(method, url)
-            .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
-            .form(&params)
-            .send();
+        let response_result = match method {
+            Method::GET => self
+                .client
+                .request(method, url)
+                .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+                .query(&params)
+                .send(),
+            _ => self
+                .client
+                .request(method, url)
+                .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+                .form(&params)
+                .send(),
+        };
 
         let response = match response_result {
             Ok(res) => res,

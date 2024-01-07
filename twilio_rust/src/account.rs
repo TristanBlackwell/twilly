@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
-use strum_macros::{AsRefStr, Display};
+use strum_macros::{AsRefStr, Display, EnumIter};
 
 use crate::{Client, TwilioError};
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
-#[serde(bound = "T: Deserialize<'de>")]
 pub struct Page<T> {
     first_page_uri: String,
     end: u16,
@@ -35,7 +35,7 @@ pub struct Account {
     pub type_field: String,
 }
 
-#[derive(AsRefStr, Display)]
+#[derive(AsRefStr, Display, EnumIter)]
 pub enum Status {
     Active,
     Closed,
@@ -104,26 +104,8 @@ impl Client {
             results.append(&mut accounts_page.accounts);
         }
 
-        //let accounts = self.page_until_end(accounts_page);
         Ok(results)
     }
-
-    // fn page_until_end(&self, current_page: Page<Account>) -> Result<Vec<Account>, TwilioError> {
-    //     let mut results: Vec<Account> = current_page.accounts;
-
-    //     while current_page.next_page_uri.is_some() {
-    //         let full_url = format!(
-    //             "https://api.twilio.com{}",
-    //             current_page.next_page_uri.unwrap().clone()
-    //         );
-    //         let mut page = self.send_request::<Page<Account>>(Method::GET, &full_url, None)?;
-
-    //         results.append(&mut page.accounts);
-    //         next_page_uri = page.next_page_uri;
-    //     }
-
-    //     Ok(results)
-    // }
 
     /// [Creates a sub-account](https://www.twilio.com/docs/iam/api/account#create-an-account-resource)
     /// under the authenticated Twilio account. Takes in an optional

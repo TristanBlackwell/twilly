@@ -1,8 +1,9 @@
 use std::process;
 
-use inquire::{validator::Validation, Text};
+use inquire::{validator::Validation, Select, Text};
+use strum::IntoEnumIterator;
 use twilio_cli::{choose_action, choose_resource, request_credentials, Action};
-use twilio_rust;
+use twilio_rust::{self, account::Status};
 
 fn main() {
     println!("Welcome to Twilio Rust! I'm here to help you interact with Twilio!");
@@ -90,9 +91,12 @@ fn main() {
                     let friendly_name = Text::new("Search by friendly name? (empty for none):")
                         .prompt()
                         .unwrap();
-                    let status = Text::new("Filter by status?").prompt().unwrap();
+
+                    let status_options = Status::iter().collect();
+                    let status = Select::new("Filter by status?:", status_options).prompt();
+
                     let mut accounts = twilio
-                        .list_accounts(Some(&friendly_name), None)
+                        .list_accounts(Some(&friendly_name), Some(&status.unwrap()))
                         .unwrap_or_else(|error| panic!("{}", error));
 
                     for i in accounts.iter_mut() {
