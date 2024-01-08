@@ -8,6 +8,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 
 /// Account SID & auth token pair required for
 /// authenticating requests to Twilio.
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
 pub struct TwilioConfig {
     pub account_sid: String,
     pub auth_token: String,
@@ -108,9 +109,9 @@ pub enum SubResource {
 
 impl Client {
     /// Create a Twilio client ready to send requests.
-    pub fn new(config: TwilioConfig) -> Client {
+    pub fn new(config: &TwilioConfig) -> Client {
         Client {
-            config,
+            config: config.clone(),
             client: reqwest::blocking::Client::new(),
         }
     }

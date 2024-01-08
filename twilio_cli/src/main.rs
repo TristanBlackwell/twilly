@@ -3,46 +3,47 @@ use std::process;
 use inquire::{validator::Validation, Select, Text};
 use strum::IntoEnumIterator;
 use twilio_cli::{choose_action, choose_resource, request_credentials, Action};
-use twilio_rust::{self, account::Status};
+use twilio_rust::{self, account::Status, TwilioConfig};
 
 fn main() {
-    println!("Welcome to Twilio Rust! I'm here to help you interact with Twilio!");
+    print_welcome_message();
 
-    let config = request_credentials().unwrap_or_else(|err| match err {
-        inquire::InquireError::OperationCanceled | inquire::InquireError::OperationInterrupted => {
-            eprintln!("Operation was cancelled or interrupted. Closing program.");
-            process::exit(130);
-        }
-        inquire::InquireError::IO(err) => {
-            panic!("Unhandled IO Error: {}", err);
-        }
-        inquire::InquireError::NotTTY => {
-            panic!("Unable to handle non-TTY input device.");
-        }
-        inquire::InquireError::InvalidConfiguration(err) => {
-            panic!(
-                "Invalid configuration for select, multi_select, or date_select: {}",
-                err
-            );
-        }
-        inquire::InquireError::Custom(err) => {
-            panic!(
-                "Custom user error caught at root. This probably shouldn't have happened :/ {}",
-                err
-            );
-        }
-    });
-    let twilio = twilio_rust::Client::new(config);
+    let mut loaded_config = true;
+    let mut config =
+        confy::load::<TwilioConfig>("twilio_cli", "profile").unwrap_or_else(|err| match err {
+            _ => {
+                eprintln!("Unable to load profile configuration: {}", err);
+                TwilioConfig {
+                    ..Default::default()
+                }
+            }
+        });
 
-    println!("Checking account...");
-    let account = twilio
-        .get_account(None)
-        .unwrap_or_else(|error| panic!("{}", error));
+    if config.account_sid.is_empty() | config.auth_token.is_empty() {
+        loaded_config = false;
+        config = request_credentials();
+    } else {
+        println!("Twilio profile loaded! {}", config.account_sid);
+        println!("");
+        println!("");
+    }
 
-    println!(
-        "✅ Account details good! {} ({} - {})",
-        account.friendly_name, account.type_field, account.status
-    );
+    let twilio = twilio_rust::Client::new(&config);
+
+    if !loaded_config {
+        println!("Checking account...");
+        let account = twilio
+            .get_account(None)
+            .unwrap_or_else(|error| panic!("{}", error));
+
+        println!(
+            "✅ Account details good! {} ({} - {})",
+            account.friendly_name, account.type_field, account.status
+        );
+
+        confy::store("twilio_cli", "profile", &config)
+            .unwrap_or_else(|err| eprintln!("Unable to store profile configuration: {}", err));
+    }
 
     loop {
         let sub_resource = choose_resource();
@@ -108,4 +109,21 @@ fn main() {
             }
         }
     }
+}
+
+fn print_welcome_message() {
+    println!("");
+    println!("");
+    println!("");
+    println!(
+        " _____          _ _ _          ____            _   
+|_   _|_      _(_) (_) ___    |  _ \\ _   _ ___| |_ 
+  | | \\ \\ /\\ / / | | |/ _ \\   | |_) | | | / __| __|
+  | |  \\ V  V /| | | | (_) |  |  _ <| |_| \\__ \\ |_ 
+  |_|   \\_/\\_/ |_|_|_|\\___/___|_| \\_\\\\__,_|___/\\__|
+                         |_____|                   "
+    );
+    println!("");
+    println!("Welcome to Twilio Rust! I'm here to help you interact with Twilio!");
+    println!("");
 }
