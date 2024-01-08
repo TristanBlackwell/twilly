@@ -1,10 +1,7 @@
 use std::process;
 
-use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter, EnumString};
-
-use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Select, Text};
-use twilio_rust::{SubResource, TwilioConfig};
+use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Text};
+use twilio_rust::TwilioConfig;
 
 /// Requests Twilio Account SID and auth token pair from the user and returns
 /// it as a `TwilioConfig` struct.
@@ -72,30 +69,4 @@ fn panic_inquire_error(error: InquireError) {
             );
         }
     }
-}
-
-pub fn choose_resource() -> SubResource {
-    let options = SubResource::iter().collect();
-    let sub_resource = Select::new("Select a resource:", options).prompt();
-
-    sub_resource.unwrap()
-}
-
-#[derive(Display, EnumIter, EnumString)]
-pub enum Action {
-    #[strum(serialize = "Get account")]
-    GetAccount,
-    #[strum(serialize = "List accounts")]
-    ListAccounts,
-    #[strum(serialize = "Create account")]
-    CreateAccount,
-    Back,
-    Exit,
-}
-
-pub fn choose_action() -> Action {
-    let options = Action::iter().collect();
-    let action_selection = Select::new("Select an action:", options).prompt();
-
-    action_selection.unwrap()
 }
