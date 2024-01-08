@@ -8,7 +8,7 @@ use twilio_rust::{self, account::Status, TwilioConfig};
 fn main() {
     print_welcome_message();
 
-    let mut loaded_config = true;
+    let mut loaded_config = false;
     let mut config =
         confy::load::<TwilioConfig>("twilio_cli", "profile").unwrap_or_else(|err| match err {
             _ => {
@@ -20,12 +20,23 @@ fn main() {
         });
 
     if config.account_sid.is_empty() | config.auth_token.is_empty() {
-        loaded_config = false;
         config = request_credentials();
     } else {
-        println!("Twilio profile loaded! {}", config.account_sid);
-        println!("");
-        println!("");
+        let use_profile = Select::new(
+            &format!(
+                "Account ({}) found in memory. Use this profile?",
+                config.account_sid
+            ),
+            vec!["Yes", "No"],
+        )
+        .prompt()
+        .unwrap();
+
+        if use_profile == "No" {
+            config = request_credentials();
+        } else {
+            loaded_config = true;
+        }
     }
 
     let twilio = twilio_rust::Client::new(&config);
