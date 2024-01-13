@@ -2,6 +2,7 @@ pub mod account;
 
 use std::{collections::HashMap, fmt};
 
+use account::Accounts;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
@@ -39,10 +40,24 @@ impl TwilioConfig {
     }
 }
 
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct Page<T> {
+    first_page_uri: String,
+    end: u16,
+    previous_page_uri: Option<String>,
+    accounts: Vec<T>,
+    uri: String,
+    page_size: u16,
+    start: u16,
+    next_page_uri: Option<String>,
+    page: u16,
+}
+
 /// The Twilio client used for interaction with
 /// Twilio's API
 pub struct Client {
-    config: TwilioConfig,
+    pub config: TwilioConfig,
     client: reqwest::blocking::Client,
 }
 
@@ -109,8 +124,8 @@ pub enum SubResource {
 
 impl Client {
     /// Create a Twilio client ready to send requests.
-    pub fn new(config: &TwilioConfig) -> Client {
-        Client {
+    pub fn new(config: &TwilioConfig) -> Self {
+        Self {
             config: config.clone(),
             client: reqwest::blocking::Client::new(),
         }
@@ -170,6 +185,10 @@ impl Client {
                 }
             }
         }
+    }
+
+    pub fn accounts<'a>(&'a self) -> Accounts {
+        Accounts { client: self }
     }
 }
 

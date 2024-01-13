@@ -2,7 +2,7 @@ mod account;
 
 use std::{process, str::FromStr};
 
-use inquire::Select;
+use inquire::{Confirm, Select};
 use strum::IntoEnumIterator;
 use twilio_cli::request_credentials;
 use twilio_rust::{self, SubResource, TwilioConfig};
@@ -24,20 +24,16 @@ fn main() {
     if config.account_sid.is_empty() | config.auth_token.is_empty() {
         config = request_credentials();
     } else {
-        let use_profile = Select::new(
-            &format!(
-                "Account ({}) found in memory. Use this profile?",
-                config.account_sid
-            ),
-            vec!["Yes", "No"],
-        )
+        if Confirm::new(&format!(
+            "Account ({}) found in memory. Use this profile? (Yes / No)",
+            config.account_sid
+        ))
         .prompt()
-        .unwrap();
-
-        if use_profile == "No" {
-            config = request_credentials();
-        } else {
+        .unwrap()
+        {
             loaded_config = true;
+        } else {
+            config = request_credentials();
         }
     }
 
@@ -46,7 +42,8 @@ fn main() {
     if !loaded_config {
         println!("Checking account...");
         let account = twilio
-            .get_account(None)
+            .accounts()
+            .get(None)
             .unwrap_or_else(|error| panic!("{}", error));
 
         println!(
@@ -62,15 +59,14 @@ fn main() {
         let mut sub_resource_options: Vec<String> = SubResource::iter()
             .map(|sub_resource| sub_resource.to_string())
             .collect();
-        let mut back_and_exit_options = vec![String::from("Back"), String::from("Exit")];
-        sub_resource_options.append(&mut back_and_exit_options);
+        let mut exit_option = vec![String::from("Exit")];
+        sub_resource_options.append(&mut exit_option);
         let sub_resource_choice = Select::new("Select a resource:", sub_resource_options)
             .prompt()
             .unwrap();
 
-        if sub_resource_choice == "Back" {
-            break;
-        } else if sub_resource_choice == "Exit" {
+        // Top level so only 'exit' option.
+        if sub_resource_choice == "Exit" {
             process::exit(0);
         }
 

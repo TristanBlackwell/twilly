@@ -1,23 +1,13 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
-use strum_macros::{AsRefStr, Display, EnumIter};
+use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 
-use crate::{Client, TwilioError};
+use crate::{Client, Page, TwilioError};
 
-#[allow(dead_code)]
-#[derive(Deserialize)]
-pub struct Page<T> {
-    first_page_uri: String,
-    end: u16,
-    previous_page_uri: Option<String>,
-    accounts: Vec<T>,
-    uri: String,
-    page_size: u16,
-    start: u16,
-    next_page_uri: Option<String>,
-    page: u16,
+pub struct Accounts<'a> {
+    pub client: &'a Client,
 }
 
 /// Details related to a specific account.
@@ -35,29 +25,38 @@ pub struct Account {
     pub type_field: String,
 }
 
-#[derive(AsRefStr, Display, EnumIter)]
-pub enum Status {
-    Active,
-    Closed,
-    Suspended,
+impl fmt::Display for Account {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} - {}", self.sid, self.status)
+    }
 }
 
-impl Client {
+#[derive(AsRefStr, Display, EnumIter, EnumString)]
+pub enum Status {
+    #[strum(serialize = "active")]
+    Active,
+    #[strum(serialize = "suspended")]
+    Suspended,
+    #[strum(serialize = "closed")]
+    Closed,
+}
+
+impl<'a> Accounts<'a> {
     /// [Gets an Account](https://www.twilio.com/docs/iam/api/account#fetch-an-account-resource)
     ///
     /// Takes in an optional `sid` argument otherwise will default to the current config
     /// account SID.
-    pub fn get_account(&self, sid: Option<&str>) -> Result<Account, TwilioError> {
+    pub fn get(&self, sid: Option<&str>) -> Result<Account, TwilioError> {
         let mut params: HashMap<String, &str> = HashMap::new();
         if let Some(sid) = sid {
-            params.insert(String::from("sid"), sid);
+            params.insert(String::from("Sid"), sid);
         }
 
-        let account = self.send_request::<Account>(
+        let account = self.client.send_request::<Account>(
             Method::GET,
             &format!(
                 "https://api.twilio.com/2010-04-01/Accounts/{}.json",
-                self.config.account_sid
+                self.client.config.account_sid
             ),
             Some(&params),
         );
@@ -68,12 +67,14 @@ impl Client {
     /// [Lists Accounts](https://www.twilio.com/docs/iam/api/account#read-multiple-account-resources)
     ///
     /// This will list the account being used for the request and any sub-accounts that match
-    /// the provided criteria
+    /// the provided criteria.
+    ///
+    /// Accounts will be _eagerly_ paged until all retrieved.
     ///
     /// Takes optional parameters:
     /// - `friendly_name` - Return only accounts matching this friendly name
     /// - `status` - Return only accounts that match this status
-    pub fn list_accounts(
+    pub fn list(
         &self,
         friendly_name: Option<&str>,
         status: Option<&Status>,
@@ -82,11 +83,17 @@ impl Client {
         if let Some(friendly_name) = friendly_name {
             params.insert(String::from("FriendlyName"), friendly_name);
         }
-        if let Some(status) = status {
-            params.insert(String::from("Status"), status.as_ref());
+
+        let status_text = if let Some(status) = status {
+            status.to_string()
+        } else {
+            String::from("")
+        };
+        if !status_text.is_empty() {
+            params.insert(String::from("Status"), &status_text);
         }
 
-        let mut accounts_page = self.send_request::<Page<Account>>(
+        let mut accounts_page = self.client.send_request::<Page<Account>>(
             Method::GET,
             "https://api.twilio.com/2010-04-01/Accounts.json?PageSize=5",
             Some(&params),
@@ -99,7 +106,9 @@ impl Client {
                 "https://api.twilio.com{}",
                 accounts_page.next_page_uri.unwrap()
             );
-            accounts_page = self.send_request::<Page<Account>>(Method::GET, &full_url, None)?;
+            accounts_page =
+                self.client
+                    .send_request::<Page<Account>>(Method::GET, &full_url, None)?;
 
             results.append(&mut accounts_page.accounts);
         }
@@ -115,15 +124,48 @@ impl Client {
     /// - Sub-accounts cannot create other sub-accounts
     /// - Trial accounts can only have a single sub-account beneath it.
     /// See documentation for detail.
-    pub fn create_account(&self, friendly_name: Option<&str>) -> Result<Account, TwilioError> {
+    pub fn create(&self, friendly_name: Option<&str>) -> Result<Account, TwilioError> {
         let mut params: HashMap<String, &str> = HashMap::new();
         if let Some(friendly_name) = friendly_name {
-            params.insert(String::from("friendlyName"), friendly_name);
+            params.insert(String::from("FriendlyName"), friendly_name);
         }
 
-        self.send_request::<Account>(
+        self.client.send_request::<Account>(
             Method::POST,
             "https://api.twilio.com/2010-04-01/Accounts.json",
+            Some(&params),
+        )
+    }
+
+    /// [Updates an account resource](https://www.twilio.com/docs/iam/api/account#update-an-account-resource)
+    /// under the authenticated Twilio account.
+    ///
+    /// Takes the account SID of the account to update and an optional friendly name
+    /// and/or status
+    pub fn update(
+        &self,
+        account_sid: &str,
+        friendly_name: Option<&str>,
+        status: Option<&Status>,
+    ) -> Result<Account, TwilioError> {
+        let mut params: HashMap<String, &str> = HashMap::new();
+        if let Some(friendly_name) = friendly_name {
+            params.insert(String::from("FriendlyName"), friendly_name);
+        }
+        let status_text = if let Some(status) = status {
+            status.to_string()
+        } else {
+            String::from("")
+        };
+        if !status_text.is_empty() {
+            params.insert(String::from("Status"), &status_text);
+        }
+        self.client.send_request::<Account>(
+            Method::POST,
+            &format!(
+                "https://api.twilio.com/2010-04-01/Accounts/{}.json",
+                account_sid
+            ),
             Some(&params),
         )
     }

@@ -1,9 +1,12 @@
-use std::process;
+use std::{process, str::FromStr};
 
-use inquire::{validator::Validation, Select, Text};
+use inquire::{validator::Validation, Confirm, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
-use twilio_rust::{account::Status, Client};
+use twilio_rust::{
+    account::{Account, Status},
+    Client,
+};
 
 #[derive(Display, EnumIter, EnumString)]
 pub enum Action {
@@ -41,7 +44,8 @@ pub fn choose_account_action(twilio: &Client) {
                     .prompt()
                     .unwrap();
                 let account = twilio
-                    .get_account(Some(&account_sid))
+                    .accounts()
+                    .get(Some(&account_sid))
                     .unwrap_or_else(|error| panic!("{}", error));
                 println!("{:?}", account);
             }
@@ -50,8 +54,10 @@ pub fn choose_account_action(twilio: &Client) {
                     .prompt()
                     .unwrap();
 
+                println!("Creating account...");
                 let account = twilio
-                    .create_account(Some(&friendly_name))
+                    .accounts()
+                    .create(Some(&friendly_name))
                     .unwrap_or_else(|error| panic!("{}", error));
                 println!(
                     "Account created: {} ({})",
@@ -59,24 +65,194 @@ pub fn choose_account_action(twilio: &Client) {
                 );
             }
             Action::ListAccounts => {
-                println!("Retrieving accounts...");
                 let friendly_name = Text::new("Search by friendly name? (empty for none):")
                     .prompt()
                     .unwrap();
 
-                let status_options = Status::iter().collect();
-                let status = Select::new("Filter by status?:", status_options).prompt();
+                let mut status_options: Vec<String> =
+                    Status::iter().map(|status| status.to_string()).collect();
+                status_options.insert(0, String::from("Any"));
+                let status_choice = Select::new("Filter by status?:", status_options)
+                    .prompt()
+                    .unwrap();
 
+                let status = if status_choice.as_str() == "Any" {
+                    None
+                } else {
+                    Some(Status::from_str(&status_choice).unwrap())
+                };
+
+                println!("Retrieving accounts...");
                 let mut accounts = twilio
-                    .list_accounts(Some(&friendly_name), Some(&status.unwrap()))
+                    .accounts()
+                    .list(Some(&friendly_name), status.as_ref())
                     .unwrap_or_else(|error| panic!("{}", error));
 
-                for i in accounts.iter_mut() {
-                    println!("Account {} ({})", i.friendly_name, i.sid);
+                // The accounts we can perform on the account we are currently using are limited.
+                // Remove from the list.
+                accounts.retain(|ac| ac.sid != twilio.config.account_sid);
+
+                if accounts.len() == 0 {
+                    println!("No accounts found.");
+                    break;
+                }
+
+                println!("Found {} accounts.", accounts.len());
+
+                loop {
+                    let selected_account =
+                        Select::new("Accounts:", accounts.clone()).prompt().unwrap();
+
+                    match selected_account.status.as_str() {
+                        "active" => {
+                            let account_action = Select::new(
+                                "Select an action:",
+                                vec!["Change name", "Suspend", "Close"],
+                            )
+                            .prompt()
+                            .unwrap();
+
+                            match account_action {
+                                "Change name" => {
+                                    change_account_name(
+                                        twilio,
+                                        &selected_account.sid,
+                                        &mut accounts,
+                                    );
+                                }
+                                "Suspend" => {
+                                    suspend_account(twilio, &selected_account.sid, &mut accounts);
+                                }
+                                "Close" => {
+                                    close_account(twilio, &selected_account.sid, &mut accounts);
+                                }
+                                _ => println!("Unknown action '{}'", account_action),
+                            }
+                        }
+                        "suspended" => {
+                            let account_action =
+                                Select::new("Select an action:", vec!["Change name", "Activate"])
+                                    .prompt()
+                                    .unwrap();
+
+                            match account_action {
+                                "Change name" => change_account_name(
+                                    twilio,
+                                    &selected_account.sid,
+                                    &mut accounts,
+                                ),
+                                "Activate" => {
+                                    activate_account(twilio, &selected_account.sid, &mut accounts)
+                                }
+                                _ => println!("Unknown action '{}'", account_action),
+                            }
+                        }
+                        "closed" => {
+                            println!(
+                                "{} is a closed account and can no longer be used.",
+                                selected_account.sid
+                            );
+                        }
+                        _ => {
+                            println!("Unknown account type '{}'", selected_account.status);
+                        }
+                    }
                 }
             }
             Action::Back => break,
             Action::Exit => process::exit(0),
         }
     }
+}
+
+fn change_account_name(twilio: &Client, account_sid: &str, accounts: &mut Vec<Account>) {
+    let friendly_name = Text::new("Provide a name:")
+        .with_validator(|val: &str| match val.len() > 0 {
+            true => Ok(Validation::Valid),
+            false => Ok(Validation::Invalid("Enter at least one character".into())),
+        })
+        .prompt()
+        .unwrap();
+
+    println!("Updating account...");
+    let updated_account = twilio
+        .accounts()
+        .update(account_sid, Some(&friendly_name), None)
+        .unwrap_or_else(|error| panic!("{}", error));
+
+    println!("{:?}", updated_account);
+
+    for acc in accounts {
+        if acc.sid == account_sid {
+            acc.friendly_name = "test".into();
+        }
+    }
+}
+
+fn activate_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Account>) {
+    if Confirm::new("Are you sure you wish to activate this account? (Yes / No)")
+        .prompt()
+        .unwrap()
+    {
+        println!("Activating account...");
+        twilio
+            .accounts()
+            .update(account_sid, None, Some(&Status::Suspended))
+            .unwrap_or_else(|error| panic!("{}", error));
+
+        println!("Account activated.");
+
+        for acc in accounts {
+            if acc.sid == account_sid {
+                acc.status = Status::Active.to_string();
+            }
+        }
+    } else {
+        println!("Operation canceled. No changes were made.");
+    }
+}
+
+fn suspend_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Account>) {
+    if Confirm::new("Are you sure you wish to suspend this account? Any activity will be disabled until the account is re-activated. (Yes / No)").prompt().unwrap() {
+		println!("Suspending account...");
+		let res = twilio
+			.accounts().update(
+				account_sid,
+				None,
+				Some(&Status::Suspended),
+			)
+			.unwrap_or_else(|error| panic!("{}", error));
+
+		println!("{}", res);
+		println!("Account suspended.");
+		for acc in accounts {
+            if acc.sid == account_sid {
+                acc.status = Status::Suspended.to_string();
+            }
+        }
+	} else {
+		println!("Operation canceled. No changes were made.");
+	}
+}
+
+fn close_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Account>) {
+    if Confirm::new("Are you sure you wish to Close this account? Activity will be disabled and this action cannot be reversed. (Yes / No)").prompt().unwrap() {
+		println!("Closing account...");
+		twilio
+			.accounts().update(
+				account_sid,
+				None,
+				Some(&Status::Suspended),
+			)
+			.unwrap_or_else(|error| panic!("{}", error));
+
+		println!("Account closed. This account will still be visible in the console for 30 days.");
+		for acc in accounts {
+            if acc.sid == account_sid {
+                acc.status = Status::Closed.to_string();
+            }
+        }
+	} else {
+		println!("Operation canceled. No changes were made.");
+	}
 }
