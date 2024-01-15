@@ -15,7 +15,7 @@ pub struct Accounts<'a> {
 pub struct Account {
     pub status: String,
     pub date_updated: String,
-    pub auth_token: String,
+    //pub auth_token: String,
     pub friendly_name: String,
     pub owner_account_sid: String,
     pub uri: String,
@@ -47,18 +47,13 @@ impl<'a> Accounts<'a> {
     /// Takes in an optional `sid` argument otherwise will default to the current config
     /// account SID.
     pub fn get(&self, sid: Option<&str>) -> Result<Account, TwilioError> {
-        let mut params: HashMap<String, &str> = HashMap::new();
-        if let Some(sid) = sid {
-            params.insert(String::from("Sid"), sid);
-        }
-
         let account = self.client.send_request::<Account>(
             Method::GET,
             &format!(
                 "https://api.twilio.com/2010-04-01/Accounts/{}.json",
-                self.client.config.account_sid
+                sid.unwrap_or_else(|| &self.client.config.account_sid)
             ),
-            Some(&params),
+            None,
         );
 
         account

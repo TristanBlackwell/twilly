@@ -8,7 +8,7 @@ use twilio_rust::{
     Client,
 };
 
-#[derive(Display, EnumIter, EnumString)]
+#[derive(Clone, Display, EnumIter, EnumString)]
 pub enum Action {
     #[strum(serialize = "Get account")]
     GetAccount,
@@ -21,12 +21,11 @@ pub enum Action {
 }
 
 pub fn choose_account_action(twilio: &Client) {
-    let options = Action::iter().collect();
-    let action_selection = Select::new("Select an action:", options).prompt();
-
-    let action = action_selection.unwrap();
+    let options: Vec<Action> = Action::iter().collect();
 
     loop {
+        let action_selection = Select::new("Select an action:", options.clone()).prompt();
+        let action = action_selection.unwrap();
         match action {
             Action::GetAccount => {
                 let account_sid = Text::new("Please provide an account SID:")
@@ -99,9 +98,29 @@ pub fn choose_account_action(twilio: &Client) {
 
                 println!("Found {} accounts.", accounts.len());
 
+                let mut modifiable_accounts = accounts.clone();
+
                 loop {
-                    let selected_account =
-                        Select::new("Accounts:", accounts.clone()).prompt().unwrap();
+                    let mut account_options = modifiable_accounts
+                        .iter()
+                        .map(|ac| format!("({}) {} - {}", ac.sid, ac.friendly_name, ac.status))
+                        .collect::<Vec<String>>();
+                    let mut back_and_exit_options =
+                        vec![String::from("Back"), String::from("Exit")];
+                    account_options.append(&mut back_and_exit_options);
+                    let selected_option =
+                        Select::new("Accounts:", account_options).prompt().unwrap();
+
+                    if selected_option == "Back" {
+                        break;
+                    } else if selected_option == "Exit" {
+                        process::exit(0);
+                    }
+
+                    let selected_account = accounts
+                        .iter()
+                        .find(|ac| ac.sid == selected_option[1..35])
+                        .unwrap();
 
                     match selected_account.status.as_str() {
                         "active" => {
@@ -117,14 +136,22 @@ pub fn choose_account_action(twilio: &Client) {
                                     change_account_name(
                                         twilio,
                                         &selected_account.sid,
-                                        &mut accounts,
+                                        &mut modifiable_accounts,
                                     );
                                 }
                                 "Suspend" => {
-                                    suspend_account(twilio, &selected_account.sid, &mut accounts);
+                                    suspend_account(
+                                        twilio,
+                                        &selected_account.sid,
+                                        &mut modifiable_accounts,
+                                    );
                                 }
                                 "Close" => {
-                                    close_account(twilio, &selected_account.sid, &mut accounts);
+                                    close_account(
+                                        twilio,
+                                        &selected_account.sid,
+                                        &mut modifiable_accounts,
+                                    );
                                 }
                                 _ => println!("Unknown action '{}'", account_action),
                             }
@@ -139,11 +166,13 @@ pub fn choose_account_action(twilio: &Client) {
                                 "Change name" => change_account_name(
                                     twilio,
                                     &selected_account.sid,
-                                    &mut accounts,
+                                    &mut modifiable_accounts,
                                 ),
-                                "Activate" => {
-                                    activate_account(twilio, &selected_account.sid, &mut accounts)
-                                }
+                                "Activate" => activate_account(
+                                    twilio,
+                                    &selected_account.sid,
+                                    &mut modifiable_accounts,
+                                ),
                                 _ => println!("Unknown action '{}'", account_action),
                             }
                         }
@@ -184,7 +213,7 @@ fn change_account_name(twilio: &Client, account_sid: &str, accounts: &mut Vec<Ac
 
     for acc in accounts {
         if acc.sid == account_sid {
-            acc.friendly_name = "test".into();
+            acc.friendly_name = friendly_name.clone();
         }
     }
 }
