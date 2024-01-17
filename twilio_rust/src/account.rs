@@ -4,16 +4,30 @@ use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 
-use crate::{Client, Page, TwilioError};
+use crate::{Client, TwilioError};
 
 pub struct Accounts<'a> {
     pub client: &'a Client,
 }
 
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct AccountPage {
+    first_page_uri: String,
+    end: u16,
+    previous_page_uri: Option<String>,
+    accounts: Vec<Account>,
+    uri: String,
+    page_size: u16,
+    start: u16,
+    next_page_uri: Option<String>,
+    page: u16,
+}
+
 /// Details related to a specific account.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Account {
-    pub status: String,
+    pub status: Status,
     pub date_updated: String,
     //pub auth_token: String,
     pub friendly_name: String,
@@ -31,14 +45,35 @@ impl fmt::Display for Account {
     }
 }
 
-#[derive(AsRefStr, Display, EnumIter, EnumString)]
+#[derive(
+    AsRefStr, Clone, Display, Debug, EnumIter, EnumString, Serialize, Deserialize, PartialEq,
+)]
 pub enum Status {
     #[strum(serialize = "active")]
+    #[serde(rename = "active")]
     Active,
     #[strum(serialize = "suspended")]
+    #[serde(rename = "suspended")]
     Suspended,
     #[strum(serialize = "closed")]
+    #[serde(rename = "closed")]
     Closed,
+}
+
+impl Default for Status {
+    fn default() -> Self {
+        Status::Active
+    }
+}
+
+impl Status {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            &Status::Active => "active",
+            &Status::Suspended => "suspended",
+            &Status::Closed => "closed",
+        }
+    }
 }
 
 impl<'a> Accounts<'a> {
@@ -88,7 +123,7 @@ impl<'a> Accounts<'a> {
             params.insert(String::from("Status"), &status_text);
         }
 
-        let mut accounts_page = self.client.send_request::<Page<Account>>(
+        let mut accounts_page = self.client.send_request::<AccountPage>(
             Method::GET,
             "https://api.twilio.com/2010-04-01/Accounts.json?PageSize=5",
             Some(&params),
@@ -103,7 +138,7 @@ impl<'a> Accounts<'a> {
             );
             accounts_page =
                 self.client
-                    .send_request::<Page<Account>>(Method::GET, &full_url, None)?;
+                    .send_request::<AccountPage>(Method::GET, &full_url, None)?;
 
             results.append(&mut accounts_page.accounts);
         }

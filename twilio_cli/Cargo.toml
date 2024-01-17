@@ -7,7 +7,8 @@ edition = "2021"
 
 [dependencies]
 twilio_rust = { path = "../twilio_rust" }
-inquire = "0.6.2"
+inquire = { version = "0.6.2", features = ["date"] }
+chrono = "0.4.31"
 strum = "0.25.0"
 strum_macros = "0.25"
-confy = "0.5.1"
+confy = "0.6.0"

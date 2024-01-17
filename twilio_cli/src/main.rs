@@ -1,4 +1,5 @@
 mod account;
+mod conversation;
 
 use std::{process, str::FromStr};
 
@@ -74,7 +75,9 @@ fn main() {
 
         match sub_resource {
             twilio_rust::SubResource::Account => account::choose_account_action(&twilio),
-            twilio_rust::SubResource::Sync => account::choose_account_action(&twilio),
+            twilio_rust::SubResource::Conversations => {
+                conversation::choose_conversation_account(&twilio)
+            }
         }
     }
 }

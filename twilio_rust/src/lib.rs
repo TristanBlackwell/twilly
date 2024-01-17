@@ -1,8 +1,10 @@
 pub mod account;
+pub mod conversation;
 
 use std::{collections::HashMap, fmt};
 
 use account::Accounts;
+use conversation::Conversations;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
@@ -38,20 +40,6 @@ impl TwilioConfig {
             auth_token,
         }
     }
-}
-
-#[allow(dead_code)]
-#[derive(Deserialize)]
-pub struct Page<T> {
-    first_page_uri: String,
-    end: u16,
-    previous_page_uri: Option<String>,
-    accounts: Vec<T>,
-    uri: String,
-    page_size: u16,
-    start: u16,
-    next_page_uri: Option<String>,
-    page: u16,
 }
 
 /// The Twilio client used for interaction with
@@ -119,7 +107,7 @@ impl fmt::Display for TwilioApiError {
 #[derive(Display, EnumIter, EnumString, PartialEq)]
 pub enum SubResource {
     Account,
-    Sync,
+    Conversations,
 }
 
 impl Client {
@@ -189,6 +177,10 @@ impl Client {
 
     pub fn accounts<'a>(&'a self) -> Accounts {
         Accounts { client: self }
+    }
+
+    pub fn conversations<'a>(&'a self) -> Conversations {
+        Conversations { client: self }
     }
 }
 

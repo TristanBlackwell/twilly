@@ -233,7 +233,7 @@ fn activate_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Accou
 
         for acc in accounts {
             if acc.sid == account_sid {
-                acc.status = Status::Active.to_string();
+                acc.status = Status::Active;
             }
         }
     } else {
@@ -256,7 +256,7 @@ fn suspend_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Accoun
 		println!("Account suspended.");
 		for acc in accounts {
             if acc.sid == account_sid {
-                acc.status = Status::Suspended.to_string();
+                acc.status = Status::Suspended;
             }
         }
 	} else {
@@ -278,7 +278,7 @@ fn close_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Account>
 		println!("Account closed. This account will still be visible in the console for 30 days.");
 		for acc in accounts {
             if acc.sid == account_sid {
-                acc.status = Status::Closed.to_string();
+                acc.status = Status::Closed;
             }
         }
 	} else {
