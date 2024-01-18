@@ -76,9 +76,9 @@ impl Default for State {
 impl State {
     pub fn as_str(&self) -> &'static str {
         match self {
-            &State::Active => "active",
-            &State::Inactive => "inactive",
-            &State::Closed => "closed",
+            &State::Active => "Active",
+            &State::Inactive => "Inactive",
+            &State::Closed => "Closed",
         }
     }
 }
@@ -137,25 +137,41 @@ impl<'a> Conversations<'a> {
     /// Also accepts a `state` option to filter by Conversation state such as closed Conversations.
     pub fn list(
         &self,
-        start_date: Option<&str>,
-        end_date: Option<&str>,
+        start_date: Option<chrono::NaiveDate>,
+        end_date: Option<chrono::NaiveDate>,
         state: Option<State>,
     ) -> Result<Vec<Conversation>, TwilioError> {
         let mut params: HashMap<String, &str> = HashMap::new();
-        if let Some(start_date) = start_date {
-            params.insert(String::from("StartDate"), start_date);
+        let start_date_text = if let Some(start_date) = start_date {
+            start_date.to_string()
+        } else {
+            String::from("")
+        };
+        if !start_date_text.is_empty() {
+            params.insert(String::from("StartDate"), &start_date_text);
         }
-        if let Some(end_date) = end_date {
-            params.insert(String::from("EndDate"), end_date);
+        let end_date_text = if let Some(end_date) = end_date {
+            end_date.to_string()
+        } else {
+            String::from("")
+        };
+        if !end_date_text.is_empty() {
+            params.insert(String::from("EndDate"), &end_date_text);
         }
-        if let Some(state) = state {
-            params.insert(String::from("State"), &state.to_string());
+
+        let state_text = if let Some(state) = state {
+            state.to_string()
+        } else {
+            String::from("")
+        };
+        if !state_text.is_empty() {
+            params.insert(String::from("State"), &state_text);
         }
 
         let mut conversations_page = self.client.send_request::<ConversationPage>(
             Method::GET,
             "https://conversations.twilio.com/v1/Conversations",
-            None,
+            Some(&params),
         )?;
 
         let mut results: Vec<Conversation> = conversations_page.conversations;

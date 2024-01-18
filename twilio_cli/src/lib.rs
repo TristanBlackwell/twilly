@@ -1,6 +1,6 @@
 use std::process;
 
-use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Text};
+use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Select, Text};
 use twilio_rust::TwilioConfig;
 
 /// Requests Twilio Account SID and auth token pair from the user and returns
@@ -68,5 +68,50 @@ fn panic_inquire_error(error: InquireError) {
                 err
             );
         }
+    }
+}
+
+pub enum FilterChoice {
+    Any,
+    Other(String),
+}
+
+/// Gets the choice of a filter from options provided as an argument. An `Any` option will be
+/// presented also suggesting that no specific filter is required.
+///
+/// This will return `Any` if the user selected this option or the `String` of the
+/// user's choice.
+pub fn get_filter_choice_from_user(mut filter_options: Vec<String>, message: &str) -> FilterChoice {
+    filter_options.insert(0, String::from("Any"));
+    let filter_choice = Select::new(message, filter_options).prompt().unwrap();
+
+    if filter_choice.as_str() == "Any" {
+        FilterChoice::Any
+    } else {
+        FilterChoice::Other(filter_choice)
+    }
+}
+
+pub enum ActionChoice {
+    Back,
+    Exit,
+    Other(String),
+}
+
+/// Gets the choice of an action from options provided as arguments. `Back` and `Exit` options
+/// will be presented also allowing the user to navigate backwards in a menu or exit.
+///
+/// This will return an enum of either the back or exit options, otherwise the string
+/// of the user's choice.
+pub fn get_action_choice_from_user(mut action_options: Vec<String>, message: &str) -> ActionChoice {
+    let mut back_and_exit_options = vec![String::from("Back"), String::from("Exit")];
+    action_options.append(&mut back_and_exit_options);
+
+    let action_choice = Select::new(message, action_options).prompt().unwrap();
+
+    match action_choice.as_str() {
+        "Back" => return ActionChoice::Back,
+        "Exit" => return ActionChoice::Exit,
+        _ => return ActionChoice::Other(action_choice),
     }
 }

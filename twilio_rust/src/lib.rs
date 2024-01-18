@@ -121,6 +121,10 @@ impl Client {
 
     /// Dispatches a request to Twilio and handles parsing the response.
     ///
+    /// If the method allows for a request body then `params` sends this
+    /// as X-www-form-urlencoded otherwise `params` are attached as query
+    /// string parameters.
+    ///
     /// Will return a result of either the resource type or one of the
     /// possible errors ([`Error`]).
     fn send_request<T>(

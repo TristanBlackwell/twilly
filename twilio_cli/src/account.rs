@@ -3,6 +3,9 @@ use std::{process, str::FromStr};
 use inquire::{validator::Validation, Confirm, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
+use twilio_cli::{
+    get_action_choice_from_user, get_filter_choice_from_user, ActionChoice, FilterChoice,
+};
 use twilio_rust::{
     account::{Account, Status},
     Client,
@@ -68,17 +71,12 @@ pub fn choose_account_action(twilio: &Client) {
                     .prompt()
                     .unwrap();
 
-                let mut status_options: Vec<String> =
-                    Status::iter().map(|status| status.to_string()).collect();
-                status_options.insert(0, String::from("Any"));
-                let status_choice = Select::new("Filter by status?:", status_options)
-                    .prompt()
-                    .unwrap();
-
-                let status = if status_choice.as_str() == "Any" {
-                    None
-                } else {
-                    Some(Status::from_str(&status_choice).unwrap())
+                let status = match get_filter_choice_from_user(
+                    Status::iter().map(|status| status.to_string()).collect(),
+                    "Filter by status: ",
+                ) {
+                    FilterChoice::Any => None,
+                    FilterChoice::Other(choice) => Some(Status::from_str(&choice).unwrap()),
                 };
 
                 println!("Retrieving accounts...");
@@ -101,80 +99,81 @@ pub fn choose_account_action(twilio: &Client) {
                 let mut modifiable_accounts = accounts.clone();
 
                 loop {
-                    let mut account_options = modifiable_accounts
-                        .iter()
-                        .map(|ac| format!("({}) {} - {}", ac.sid, ac.friendly_name, ac.status))
-                        .collect::<Vec<String>>();
-                    let mut back_and_exit_options =
-                        vec![String::from("Back"), String::from("Exit")];
-                    account_options.append(&mut back_and_exit_options);
-                    let selected_option =
-                        Select::new("Accounts:", account_options).prompt().unwrap();
+                    let account_action_choice = get_action_choice_from_user(
+                        modifiable_accounts
+                            .iter()
+                            .map(|ac| format!("({}) {} - {}", ac.sid, ac.friendly_name, ac.status))
+                            .collect::<Vec<String>>(),
+                        "Accounts: ",
+                    );
 
-                    if selected_option == "Back" {
-                        break;
-                    } else if selected_option == "Exit" {
-                        process::exit(0);
-                    }
-
-                    let selected_account = accounts
-                        .iter()
-                        .find(|ac| ac.sid == selected_option[1..35])
-                        .unwrap();
+                    let selected_account = match account_action_choice {
+                        ActionChoice::Back => break,
+                        ActionChoice::Exit => process::exit(0),
+                        ActionChoice::Other(choice) => {
+                            accounts.iter().find(|ac| ac.sid == choice[1..35]).unwrap()
+                        }
+                    };
 
                     match selected_account.status.as_str() {
                         "active" => {
-                            let account_action = Select::new(
-                                "Select an action:",
-                                vec!["Change name", "Suspend", "Close"],
-                            )
-                            .prompt()
-                            .unwrap();
+                            let selected_account_action = get_action_choice_from_user(
+                                vec!["Change name".into(), "Suspend".into(), "Close".into()],
+                                "Select an action: ",
+                            );
 
-                            match account_action {
-                                "Change name" => {
-                                    change_account_name(
-                                        twilio,
-                                        &selected_account.sid,
-                                        &mut modifiable_accounts,
-                                    );
-                                }
-                                "Suspend" => {
-                                    suspend_account(
-                                        twilio,
-                                        &selected_account.sid,
-                                        &mut modifiable_accounts,
-                                    );
-                                }
-                                "Close" => {
-                                    close_account(
-                                        twilio,
-                                        &selected_account.sid,
-                                        &mut modifiable_accounts,
-                                    );
-                                }
-                                _ => println!("Unknown action '{}'", account_action),
-                            }
+                            match selected_account_action {
+                                ActionChoice::Back => break,
+                                ActionChoice::Exit => process::exit(0),
+                                ActionChoice::Other(choice) => match choice.as_str() {
+                                    "Change name" => {
+                                        change_account_name(
+                                            twilio,
+                                            &selected_account.sid,
+                                            &mut modifiable_accounts,
+                                        );
+                                    }
+                                    "Suspend" => {
+                                        suspend_account(
+                                            twilio,
+                                            &selected_account.sid,
+                                            &mut modifiable_accounts,
+                                        );
+                                    }
+                                    "Close" => {
+                                        close_account(
+                                            twilio,
+                                            &selected_account.sid,
+                                            &mut modifiable_accounts,
+                                        );
+                                    }
+                                    _ => println!("Unknown action '{}'", choice),
+                                },
+                            };
                         }
                         "suspended" => {
-                            let account_action =
-                                Select::new("Select an action:", vec!["Change name", "Activate"])
-                                    .prompt()
-                                    .unwrap();
+                            let selected_account_action = get_action_choice_from_user(
+                                vec!["Change name".into(), "Activate".into()],
+                                "Select an action: ",
+                            );
 
-                            match account_action {
-                                "Change name" => change_account_name(
-                                    twilio,
-                                    &selected_account.sid,
-                                    &mut modifiable_accounts,
-                                ),
-                                "Activate" => activate_account(
-                                    twilio,
-                                    &selected_account.sid,
-                                    &mut modifiable_accounts,
-                                ),
-                                _ => println!("Unknown action '{}'", account_action),
-                            }
+                            match selected_account_action {
+                                ActionChoice::Back => break,
+                                ActionChoice::Exit => process::exit(0),
+                                ActionChoice::Other(choice) => match choice.as_str() {
+                                    "Change name" => change_account_name(
+                                        twilio,
+                                        &selected_account.sid,
+                                        &mut modifiable_accounts,
+                                    ),
+                                    "Activate" => activate_account(
+                                        twilio,
+                                        &selected_account.sid,
+                                        &mut modifiable_accounts,
+                                    ),
+                                    _ => println!("Unknown action '{}'", choice),
+                                },
+                            };
                         }
                         "closed" => {
                             println!(

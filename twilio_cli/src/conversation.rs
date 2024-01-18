@@ -1,10 +1,11 @@
-use std::process;
+use std::{process, str::FromStr};
 
-use chrono::Datelike;
+use chrono::{Datelike, NaiveDate};
 use inquire::{validator::Validation, Confirm, DateSelect, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
-use twilio_rust::Client;
+use twilio_cli::{get_filter_choice_from_user, FilterChoice};
+use twilio_rust::{conversation::State, Client};
 
 #[derive(Clone, Display, EnumIter, EnumString)]
 pub enum Action {
@@ -45,58 +46,63 @@ pub fn choose_conversation_account(twilio: &Client) {
                 println!("{:?}", conversation);
             }
             Action::ListConversations => {
+                let mut start_date: Option<chrono::NaiveDate> = None;
+                let mut end_date: Option<chrono::NaiveDate> = None;
+
+                if Confirm::new("Would you like to filter between specified dates? (Yes / No)")
+                    .prompt()
+                    .unwrap()
+                {
+                    let utc_now = chrono::Utc::now();
+                    let utc_one_year_ago = utc_now - chrono::Duration::days(365);
+                    start_date = Some(get_date_from_user(
+                        "Choose a start date:",
+                        Some(DateRange {
+                            minimum_date: chrono::NaiveDate::from_ymd_opt(
+                                utc_one_year_ago.year(),
+                                utc_one_year_ago.month(),
+                                utc_one_year_ago.day(),
+                            )
+                            .unwrap(),
+                            maximum_date: chrono::NaiveDate::from_ymd_opt(
+                                utc_now.year(),
+                                utc_now.month(),
+                                utc_now.day(),
+                            )
+                            .unwrap(),
+                        }),
+                    ));
+                    end_date = Some(get_date_from_user(
+                        "Choose an end date:",
+                        Some(DateRange {
+                            minimum_date: chrono::NaiveDate::from_ymd_opt(
+                                start_date.unwrap().year_ce().1.try_into().unwrap(),
+                                start_date.unwrap().month0() + 1,
+                                start_date.unwrap().day0() + 1,
+                            )
+                            .unwrap(),
+                            maximum_date: chrono::NaiveDate::from_ymd_opt(
+                                utc_now.year(),
+                                utc_now.month(),
+                                utc_now.day(),
+                            )
+                            .unwrap(),
+                        }),
+                    ));
+                }
+
+                let state: Option<State> = match get_filter_choice_from_user(
+                    State::iter().map(|state| state.to_string()).collect(),
+                    "Filter by state?:",
+                ) {
+                    FilterChoice::Any => None,
+                    FilterChoice::Other(choice) => Some(State::from_str(&choice).unwrap()),
+                };
+
                 println!("Fetching conversations...");
-                let mut start_date: Option<&chrono::NaiveDate> = None;
-                let mut end_date: Option<&chrono::NaiveDate> = None;
-                // if Confirm::new("Would you like to filter between specified dates? (Yes / No)")
-                //     .prompt()
-                //     .unwrap()
-                // {
-                //     let utc_now = chrono::Utc::now();
-                //     let utc_one_year_ago = utc_now - chrono::Duration::days(365);
-                //     let start_date_selection = DateSelect::new("Choose a start date:")
-                //         .with_min_date(chrono::NaiveDate::from_ymd(
-                //             utc_one_year_ago.year(),
-                //             utc_one_year_ago.month(),
-                //             utc_one_year_ago.day(),
-                //         ))
-                //         .with_max_date(chrono::NaiveDate::from_ymd(
-                //             utc_now.year(),
-                //             utc_now.month(),
-                //             utc_now.day(),
-                //         ))
-                //         .with_week_start(chrono::Weekday::Mon)
-                //         .with_help_message(
-                //             "You can retrieve Conversations up to a year in the past.",
-                //         )
-                //         .prompt();
-                //     let chosen_start_date = start_date_selection.unwrap();
-                //     start_date = Some(&chosen_start_date);
-
-                //     let end_date_selection = DateSelect::new("Choose an end date:")
-                //         .with_min_date(chrono::NaiveDate::from_ymd(
-                //             start_date.unwrap().year_ce().1.try_into().unwrap(),
-                //             start_date.unwrap().month0() + 1,
-                //             start_date.unwrap().day0(),
-                //         ))
-                //         .with_max_date(chrono::NaiveDate::from_ymd(
-                //             utc_now.year(),
-                //             utc_now.month(),
-                //             utc_now.day(),
-                //         ))
-                //         .with_week_start(chrono::Weekday::Mon)
-                //         .with_help_message(
-                //             "You can retrieve Conversations up to a year in the past.",
-                //         )
-                //         .prompt();
-                //     end_date = Some(&end_date_selection.unwrap());
-                // }
-
-                // TODO: State option
-
                 let conversations = twilio
                     .conversations()
-                    .list(None, None, None)
+                    .list(start_date, end_date, state)
                     .unwrap_or_else(|error| panic!("{}", error));
 
                 if conversations.len() == 0 {
@@ -106,11 +112,56 @@ pub fn choose_conversation_account(twilio: &Client) {
                     println!("Found {} conversations.", conversations.len());
                     conversations
                         .into_iter()
-                        .for_each(|conv| println!("{} - {}", conv.sid, conv.state));
+                        .for_each(|conv| match conv.unique_name {
+                            Some(unique_name) => {
+                                println!("({}) {} - {}", conv.sid, unique_name, conv.state)
+                            }
+                            None => println!("{} - {}", conv.sid, conv.state),
+                        });
                 }
             }
             Action::Back => break,
             Action::Exit => process::exit(0),
         }
     }
+}
+
+struct DateRange {
+    minimum_date: chrono::NaiveDate,
+    maximum_date: chrono::NaiveDate,
+}
+
+fn get_date_from_user(message: &str, date_range: Option<DateRange>) -> NaiveDate {
+    let selected_date = match date_range {
+        Some(date_range) => {
+            let date_selection = DateSelect::new(message)
+                .with_min_date(
+                    chrono::NaiveDate::from_ymd_opt(
+                        date_range.minimum_date.year(),
+                        date_range.minimum_date.month(),
+                        date_range.minimum_date.day(),
+                    )
+                    .unwrap(),
+                )
+                .with_max_date(
+                    chrono::NaiveDate::from_ymd_opt(
+                        date_range.maximum_date.year(),
+                        date_range.maximum_date.month(),
+                        date_range.maximum_date.day(),
+                    )
+                    .unwrap(),
+                )
+                .with_week_start(chrono::Weekday::Mon)
+                .prompt();
+            date_selection.unwrap()
+        }
+        None => {
+            let date_selection = DateSelect::new(message)
+                .with_week_start(chrono::Weekday::Mon)
+                .prompt();
+            date_selection.unwrap()
+        }
+    };
+
+    selected_date
 }
