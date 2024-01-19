@@ -49,7 +49,8 @@ pub fn choose_account_action(twilio: &Client) {
                     .accounts()
                     .get(Some(&account_sid))
                     .unwrap_or_else(|error| panic!("{}", error));
-                println!("{:?}", account);
+                println!("{:#?}", account);
+                println!();
             }
             Action::CreateAccount => {
                 let friendly_name = Text::new("Enter a friendly name (empty for default):")
@@ -208,7 +209,8 @@ fn change_account_name(twilio: &Client, account_sid: &str, accounts: &mut Vec<Ac
         .update(account_sid, Some(&friendly_name), None)
         .unwrap_or_else(|error| panic!("{}", error));
 
-    println!("{:?}", updated_account);
+    println!("{:#?}", updated_account);
+    println!("");
 
     for acc in accounts {
         if acc.sid == account_sid {

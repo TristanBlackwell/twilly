@@ -50,7 +50,7 @@ pub struct Client {
 }
 
 pub struct TwilioError {
-    kind: ErrorKind,
+    pub kind: ErrorKind,
 }
 
 impl fmt::Display for TwilioError {
@@ -85,13 +85,13 @@ impl ErrorKind {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TwilioApiError {
     /// Twilio specific error code
-    code: u32,
+    pub code: u32,
     /// Detail of the error
-    message: String,
+    pub message: String,
     /// Where to find more info on the error
-    more_info: String,
+    pub more_info: String,
     /// HTTP status code
-    status: u16,
+    pub status: u16,
 }
 
 impl fmt::Display for TwilioApiError {

@@ -5,7 +5,7 @@ use inquire::{validator::Validation, Confirm, DateSelect, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use twilio_cli::{get_filter_choice_from_user, FilterChoice};
-use twilio_rust::{conversation::State, Client};
+use twilio_rust::{conversation::State, Client, ErrorKind};
 
 #[derive(Clone, Display, EnumIter, EnumString)]
 pub enum Action {
@@ -13,6 +13,10 @@ pub enum Action {
     GetConversation,
     #[strum(serialize = "List Conversations")]
     ListConversations,
+    #[strum(serialize = "Delete Conversation")]
+    DeleteConversation,
+    #[strum(serialize = "Delete all Conversations")]
+    DeleteAllConversations,
     Back,
     Exit,
 }
@@ -43,7 +47,8 @@ pub fn choose_conversation_account(twilio: &Client) {
                     .conversations()
                     .get(&conversation_sid)
                     .unwrap_or_else(|error| panic!("{}", error));
-                println!("{:?}", conversation);
+                println!("{:#?}", conversation);
+                println!("");
             }
             Action::ListConversations => {
                 let mut start_date: Option<chrono::NaiveDate> = None;
@@ -118,6 +123,78 @@ pub fn choose_conversation_account(twilio: &Client) {
                             }
                             None => println!("{} - {}", conv.sid, conv.state),
                         });
+                }
+            }
+            Action::DeleteConversation => {
+                let conversation_sid =
+                    Text::new("Please provide a conversation SID, or unique name:")
+                        .with_placeholder("CH...")
+                        .with_validator(|val: &str| {
+                            if val.starts_with("CH") && val.len() == 34 {
+                                Ok(Validation::Valid)
+                            } else {
+                                Ok(Validation::Invalid(
+                                    "Conversation SID should be 34 characters in length".into(),
+                                ))
+                            }
+                        })
+                        .prompt()
+                        .unwrap();
+
+                if Confirm::new("Are you sure to wish to delete the Conversation? (Yes / No)")
+                    .prompt()
+                    .unwrap()
+                {
+                    let delete_result = twilio.conversations().delete(&conversation_sid);
+
+                    if delete_result.is_ok() {
+                        println!("Conversation deleted.");
+                        println!("");
+                    } else {
+                        let delete_error = delete_result.unwrap_err();
+                        match delete_error.kind {
+                            ErrorKind::TwilioError(twilio_error) => {
+                                if twilio_error.status == 404 {
+                                    println!(
+                                        "A Conversation with SID '{}' was not found.",
+                                        &conversation_sid
+                                    );
+                                    println!("");
+                                } else {
+                                    panic!("{}", twilio_error)
+                                }
+                            }
+                            _ => panic!("{}", delete_error),
+                        };
+                    }
+                } else {
+                    println!("Operation canceled. No changes were made.");
+                }
+            }
+            Action::DeleteAllConversations => {
+                if Confirm::new("Are you sure to wish to delete **all** Conversations? (Yes / No)")
+                    .prompt()
+                    .unwrap()
+                {
+                    if Confirm::new("Are you double sure? There is no going back. (Yes / No)")
+                        .prompt()
+                        .unwrap()
+                    {
+                        println!("Proceeding with deletion. Please wait...");
+                        twilio
+                            .conversations()
+                            .delete_all(None)
+                            .unwrap_or_else(|error| panic!("{}", error));
+
+                        println!("All conversations deleleted.");
+                        println!("");
+                    } else {
+                        println!("Operation canceled. No changes were made.");
+                        println!("");
+                    }
+                } else {
+                    println!("Operation canceled. No changes were made.");
+                    println!("");
                 }
             }
             Action::Back => break,

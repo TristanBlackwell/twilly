@@ -57,13 +57,13 @@ impl fmt::Display for Conversation {
 )]
 pub enum State {
     #[strum(serialize = "active")]
-    #[serde(rename = "active")]
+    #[serde(rename = "Active")]
     Active,
     #[strum(serialize = "inactive")]
-    #[serde(rename = "inactive")]
+    #[serde(rename = "Inactive")]
     Inactive,
     #[strum(serialize = "closed")]
-    #[serde(rename = "closed")]
+    #[serde(rename = "Closed")]
     Closed,
 }
 
@@ -187,5 +187,39 @@ impl<'a> Conversations<'a> {
         }
 
         Ok(results)
+    }
+
+    /// [Deletes a Conversation](https://www.twilio.com/docs/conversations/api/conversation-resource#delete-a-conversation-resource)
+    ///
+    /// Takes in a `sid` argument which can also be the conversations `uniqueName` and **deletes** the resource.
+    pub fn delete(&self, sid: &str) -> Result<(), TwilioError> {
+        let conversation = self.client.send_request::<()>(
+            Method::DELETE,
+            &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
+            None,
+        );
+
+        conversation
+    }
+
+    /// Deletes **all** conversation resources on a Twilio account.
+    pub fn delete_all(&self, state: Option<State>) -> Result<(), TwilioError> {
+        let conversations = self.list(None, None, state)?;
+
+        conversations
+            .into_iter()
+            .try_for_each(|conversation| -> Result<(), TwilioError> {
+                self.client.send_request::<()>(
+                    Method::DELETE,
+                    &format!(
+                        "https://conversations.twilio.com/v1/Conversations/{}",
+                        conversation.sid
+                    ),
+                    None,
+                )?;
+                Ok(())
+            })?;
+
+        Ok(())
     }
 }
