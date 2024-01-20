@@ -4,7 +4,9 @@ use chrono::{Datelike, NaiveDate};
 use inquire::{validator::Validation, Confirm, DateSelect, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
-use twilio_cli::{get_filter_choice_from_user, FilterChoice};
+use twilio_cli::{
+    get_action_choice_from_user, get_filter_choice_from_user, ActionChoice, FilterChoice,
+};
 use twilio_rust::{conversation::State, Client, ErrorKind};
 
 #[derive(Clone, Display, EnumIter, EnumString)]
@@ -43,12 +45,52 @@ pub fn choose_conversation_account(twilio: &Client) {
                         })
                         .prompt()
                         .unwrap();
-                let conversation = twilio
-                    .conversations()
-                    .get(&conversation_sid)
-                    .unwrap_or_else(|error| panic!("{}", error));
-                println!("{:#?}", conversation);
-                println!("");
+
+                let get_result = twilio.conversations().get(&conversation_sid);
+
+                if get_result.is_ok() {
+                    let conversation_action_choice =
+                        get_action_choice_from_user(vec!["Delete".into()], "Select an action: ");
+
+                    match conversation_action_choice {
+                        ActionChoice::Back => break,
+                        ActionChoice::Exit => process::exit(0),
+                        ActionChoice::Other(choice) => {
+                            match choice.as_str() {
+                                "Delete" => {
+                                    if Confirm::new(
+                                    "Are you sure to wish to delete the Conversation? (Yes / No)",
+                                )
+                                .prompt()
+                                .unwrap()
+                                {
+									println!("Deleting Conversation...");
+                                    twilio.conversations().delete(&conversation_sid).unwrap_or_else(|error| panic!("{}", error) );
+									println!("Conversation deleted.");
+									println!();
+                                }
+                                }
+                                _ => println!("Unknown action '{}'", choice),
+                            }
+                        }
+                    }
+                } else {
+                    let get_error = get_result.unwrap_err();
+                    match get_error.kind {
+                        ErrorKind::TwilioError(twilio_error) => {
+                            if twilio_error.status == 404 {
+                                println!(
+                                    "A Conversation with SID '{}' was not found.",
+                                    &conversation_sid
+                                );
+                                println!("");
+                            } else {
+                                panic!("{}", twilio_error)
+                            }
+                        }
+                        _ => panic!("{}", get_error),
+                    };
+                }
             }
             Action::ListConversations => {
                 let mut start_date: Option<chrono::NaiveDate> = None;

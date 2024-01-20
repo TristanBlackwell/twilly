@@ -5,7 +5,7 @@ use std::{collections::HashMap, fmt};
 
 use account::Accounts;
 use conversation::Conversations;
-use reqwest::Method;
+use reqwest::{blocking::Response, Method};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 
@@ -136,35 +136,13 @@ impl Client {
     where
         T: serde::de::DeserializeOwned,
     {
-        let response_result = match method {
-            Method::GET => self
-                .client
-                .request(method, url)
-                .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
-                .query(&params)
-                .send(),
-            _ => self
-                .client
-                .request(method, url)
-                .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
-                .form(&params)
-                .send(),
-        };
+        let response = self.send_http_request(method, url, params)?;
 
-        let response = match response_result {
-            Ok(res) => res,
-            Err(error) => {
-                return Err(TwilioError {
-                    kind: ErrorKind::NetworkError(error),
-                })
-            }
-        };
-
-        match response.status() {
-            reqwest::StatusCode::OK => response.json::<T>().map_err(|error| TwilioError {
+        match response.status().is_success() {
+            true => response.json::<T>().map_err(|error| TwilioError {
                 kind: ErrorKind::ParsingError(error),
             }),
-            _ => {
+            false => {
                 let parsed_twilio_error = response.json::<TwilioApiError>();
 
                 match parsed_twilio_error {
@@ -177,6 +155,66 @@ impl Client {
                 }
             }
         }
+    }
+
+    /// Dispatches a request to Twilio ignoring the response returned. This is generally
+    /// for mutating where either the response is irrelevant or there is nothing returned.
+    ///
+    /// If the method allows for a request body then `params` sends this
+    /// as X-www-form-urlencoded otherwise `params` are attached as query
+    /// string parameters.
+    ///
+    /// Will return a result of either the resource type or one of the
+    /// possible errors ([`Error`]).
+    fn send_request_and_ignore_response(
+        &self,
+        method: Method,
+        url: &str,
+        params: Option<&HashMap<String, &str>>,
+    ) -> Result<(), TwilioError> {
+        let response = self.send_http_request(method, url, params)?;
+
+        match response.status().is_success() {
+            true => Ok(()),
+            false => {
+                let parsed_twilio_error = response.json::<TwilioApiError>();
+
+                match parsed_twilio_error {
+                    Ok(twilio_error) => Err(TwilioError {
+                        kind: ErrorKind::TwilioError(twilio_error),
+                    }),
+                    Err(error) => Err(TwilioError {
+                        kind: ErrorKind::ParsingError(error),
+                    }),
+                }
+            }
+        }
+    }
+
+    /// Helper function for `send_request`. Not designed to be used independently.
+    fn send_http_request(
+        &self,
+        method: Method,
+        url: &str,
+        params: Option<&HashMap<String, &str>>,
+    ) -> Result<Response, TwilioError> {
+        match method {
+            Method::GET => self
+                .client
+                .request(method, url)
+                .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+                .query(&params)
+                .send(),
+            _ => self
+                .client
+                .request(method, url)
+                .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+                .form(&params)
+                .send(),
+        }
+        .map_err(|error| TwilioError {
+            kind: ErrorKind::NetworkError(error),
+        })
     }
 
     pub fn accounts<'a>(&'a self) -> Accounts {
