@@ -5,7 +5,8 @@ use inquire::{validator::Validation, Confirm, DateSelect, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use twilio_cli::{
-    get_action_choice_from_user, get_filter_choice_from_user, ActionChoice, FilterChoice,
+    get_action_choice_from_user, get_filter_choice_from_user, prompt_user, ActionChoice,
+    FilterChoice,
 };
 use twilio_rust::{conversation::State, Client, ErrorKind};
 
@@ -31,7 +32,7 @@ pub fn choose_conversation_account(twilio: &Client) {
         let action = action_selection.unwrap();
         match action {
             Action::GetConversation => {
-                let conversation_sid =
+                let conversation_sid_prompt =
                     Text::new("Please provide a conversation SID, or unique name:")
                         .with_placeholder("CH...")
                         .with_validator(|val: &str| {
@@ -42,19 +43,22 @@ pub fn choose_conversation_account(twilio: &Client) {
                                     "Conversation SID should be 34 characters in length".into(),
                                 ))
                             }
-                        })
-                        .prompt()
-                        .unwrap();
+                        });
 
-                let get_result = twilio.conversations().get(&conversation_sid);
+                let conversation_sid_opt = prompt_user(conversation_sid_prompt);
 
-                if get_result.is_ok() {
-                    let conversation_action_choice = get_action_choice_from_user(
-                        vec![String::from("Delete")],
-                        "Select an action: ",
-                    );
+                if conversation_sid_opt.is_some() {
+                    let conversation_sid = conversation_sid_opt.unwrap();
 
-                    match conversation_action_choice {
+                    let get_result = twilio.conversations().get(&conversation_sid);
+
+                    if get_result.is_ok() {
+                        let conversation_action_choice = get_action_choice_from_user(
+                            vec![String::from("Delete")],
+                            "Select an action: ",
+                        );
+
+                        match conversation_action_choice {
                         Some(conversation_action) => match conversation_action {
                             ActionChoice::Back => break,
                             ActionChoice::Exit => process::exit(0),
@@ -77,22 +81,23 @@ pub fn choose_conversation_account(twilio: &Client) {
                         },
                         None => break,
                     }
-                } else {
-                    let get_error = get_result.unwrap_err();
-                    match get_error.kind {
-                        ErrorKind::TwilioError(twilio_error) => {
-                            if twilio_error.status == 404 {
-                                println!(
-                                    "A Conversation with SID '{}' was not found.",
-                                    &conversation_sid
-                                );
-                                println!("");
-                            } else {
-                                panic!("{}", twilio_error)
+                    } else {
+                        let get_error = get_result.unwrap_err();
+                        match get_error.kind {
+                            ErrorKind::TwilioError(twilio_error) => {
+                                if twilio_error.status == 404 {
+                                    println!(
+                                        "A Conversation with SID '{}' was not found.",
+                                        &conversation_sid
+                                    );
+                                    println!("");
+                                } else {
+                                    panic!("{}", twilio_error)
+                                }
                             }
-                        }
-                        _ => panic!("{}", get_error),
-                    };
+                            _ => panic!("{}", get_error),
+                        };
+                    }
                 }
             }
             Action::ListConversations => {
@@ -141,18 +146,17 @@ pub fn choose_conversation_account(twilio: &Client) {
                     ));
                 }
 
-                let state: Option<State> = match get_filter_choice_from_user(
+                let state_choice_opt = get_filter_choice_from_user(
                     State::iter().map(|state| state.to_string()).collect(),
                     "Filter by state? ",
-                ) {
-                    Some(state_choice) => match state_choice {
+                );
+
+                if state_choice_opt.is_some() {
+                    let state = match state_choice_opt.unwrap() {
                         FilterChoice::Any => None,
                         FilterChoice::Other(choice) => Some(State::from_str(&choice).unwrap()),
-                    },
-                    None => None,
-                };
+                    };
 
-                if state.is_some() {
                     println!("Fetching conversations...");
                     let conversations = twilio
                         .conversations()
@@ -222,14 +226,16 @@ pub fn choose_conversation_account(twilio: &Client) {
                 }
             }
             Action::DeleteAllConversations => {
-                if Confirm::new("Are you sure to wish to delete **all** Conversations? (Yes / No)")
-                    .prompt()
-                    .unwrap()
-                {
-                    if Confirm::new("Are you double sure? There is no going back. (Yes / No)")
-                        .prompt()
-                        .unwrap()
-                    {
+                let first_confirmation_prompt = Confirm::new(
+                    "Are you sure to wish to delete **all** Conversations? (Yes / No)",
+                );
+                let second_confirmation_prompt =
+                    Confirm::new("Are you double sure? There is no going back. (Yes / No)");
+
+                let first_confirmation = prompt_user(first_confirmation_prompt);
+                if first_confirmation.is_some() && first_confirmation.unwrap() == true {
+                    let second_confirmation = prompt_user(second_confirmation_prompt);
+                    if second_confirmation.is_some() && second_confirmation.unwrap() == true {
                         println!("Proceeding with deletion. Please wait...");
                         twilio
                             .conversations()
@@ -238,14 +244,12 @@ pub fn choose_conversation_account(twilio: &Client) {
 
                         println!("All conversations deleleted.");
                         println!("");
-                    } else {
-                        println!("Operation canceled. No changes were made.");
-                        println!("");
+                        return;
                     }
-                } else {
-                    println!("Operation canceled. No changes were made.");
-                    println!("");
                 }
+
+                println!("Operation canceled. No changes were made.");
+                println!("");
             }
             Action::Back => break,
             Action::Exit => process::exit(0),

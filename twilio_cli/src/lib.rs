@@ -1,6 +1,8 @@
 use std::{fmt::Display, process};
 
-use inquire::{validator::Validation, InquireError, Password, PasswordDisplayMode, Select, Text};
+use inquire::{
+    validator::Validation, Confirm, InquireError, Password, PasswordDisplayMode, Select, Text,
+};
 use twilio_rust::TwilioConfig;
 
 /// Requests Twilio Account SID and auth token pair from the user and returns
@@ -48,6 +50,12 @@ impl InquireControl<String> for Text<'_> {
 
 impl InquireControl<String> for Password<'_> {
     fn prompt_user(&self) -> Result<String, InquireError> {
+        self.clone().prompt()
+    }
+}
+
+impl InquireControl<bool> for Confirm<'_> {
+    fn prompt_user(&self) -> Result<bool, InquireError> {
         self.clone().prompt()
     }
 }

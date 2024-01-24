@@ -82,18 +82,17 @@ pub fn choose_account_action(twilio: &Client) {
 
                 if friendly_name_opt.is_some() {
                     let friendly_name = friendly_name_opt.unwrap();
-                    let status = match get_filter_choice_from_user(
+                    let status_choice_opt = get_filter_choice_from_user(
                         Status::iter().map(|status| status.to_string()).collect(),
                         "Filter by status: ",
-                    ) {
-                        Some(status) => match status {
+                    );
+
+                    if status_choice_opt.is_some() {
+                        let status = match status_choice_opt.unwrap() {
                             FilterChoice::Any => None,
                             FilterChoice::Other(choice) => Some(Status::from_str(&choice).unwrap()),
-                        },
-                        None => None,
-                    };
+                        };
 
-                    if status.is_some() {
                         println!("Retrieving accounts...");
                         let mut accounts = twilio
                             .accounts()
@@ -238,35 +237,37 @@ pub fn choose_account_action(twilio: &Client) {
 }
 
 fn change_account_name(twilio: &Client, account_sid: &str, accounts: &mut Vec<Account>) {
-    let friendly_name = Text::new("Provide a name:")
-        .with_validator(|val: &str| match val.len() > 0 {
+    let friendly_name_prompt =
+        Text::new("Provide a name:").with_validator(|val: &str| match val.len() > 0 {
             true => Ok(Validation::Valid),
             false => Ok(Validation::Invalid("Enter at least one character".into())),
-        })
-        .prompt()
-        .unwrap();
+        });
+    let friendly_name_opt = prompt_user(friendly_name_prompt);
 
-    println!("Updating account...");
-    let updated_account = twilio
-        .accounts()
-        .update(account_sid, Some(&friendly_name), None)
-        .unwrap_or_else(|error| panic!("{}", error));
+    if friendly_name_opt.is_some() {
+        let friendly_name = friendly_name_opt.unwrap();
+        println!("Updating account...");
+        let updated_account = twilio
+            .accounts()
+            .update(account_sid, Some(&friendly_name), None)
+            .unwrap_or_else(|error| panic!("{}", error));
 
-    println!("{:#?}", updated_account);
-    println!("");
+        println!("{:#?}", updated_account);
+        println!("");
 
-    for acc in accounts {
-        if acc.sid == account_sid {
-            acc.friendly_name = friendly_name.clone();
+        for acc in accounts {
+            if acc.sid == account_sid {
+                acc.friendly_name = friendly_name.clone();
+            }
         }
     }
 }
 
 fn activate_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Account>) {
-    if Confirm::new("Are you sure you wish to activate this account? (Yes / No)")
-        .prompt()
-        .unwrap()
-    {
+    let confirmation_prompt =
+        Confirm::new("Are you sure you wish to activate this account? (Yes / No)");
+    let confirmation = prompt_user(confirmation_prompt);
+    if confirmation.is_some() && confirmation.unwrap() == true {
         println!("Activating account...");
         twilio
             .accounts()
@@ -280,52 +281,55 @@ fn activate_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Accou
                 acc.status = Status::Active;
             }
         }
-    } else {
-        println!("Operation canceled. No changes were made.");
+        return;
     }
+
+    println!("Operation canceled. No changes were made.");
 }
 
 fn suspend_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Account>) {
-    if Confirm::new("Are you sure you wish to suspend this account? Any activity will be disabled until the account is re-activated. (Yes / No)").prompt().unwrap() {
-		println!("Suspending account...");
-		let res = twilio
-			.accounts().update(
-				account_sid,
-				None,
-				Some(&Status::Suspended),
-			)
-			.unwrap_or_else(|error| panic!("{}", error));
+    let confirmation_prompt =
+        Confirm::new("Are you sure you wish to suspend this account? Any activity will be disabled until the account is re-activated. (Yes / No)");
+    let confirmation = prompt_user(confirmation_prompt);
+    if confirmation.is_some() && confirmation.unwrap() == true {
+        println!("Suspending account...");
+        let res = twilio
+            .accounts()
+            .update(account_sid, None, Some(&Status::Suspended))
+            .unwrap_or_else(|error| panic!("{}", error));
 
-		println!("{}", res);
-		println!("Account suspended.");
-		for acc in accounts {
+        println!("{}", res);
+        println!("Account suspended.");
+        for acc in accounts {
             if acc.sid == account_sid {
                 acc.status = Status::Suspended;
             }
         }
-	} else {
-		println!("Operation canceled. No changes were made.");
-	}
+        return;
+    }
+
+    println!("Operation canceled. No changes were made.");
 }
 
 fn close_account(twilio: &Client, account_sid: &str, accounts: &mut Vec<Account>) {
-    if Confirm::new("Are you sure you wish to Close this account? Activity will be disabled and this action cannot be reversed. (Yes / No)").prompt().unwrap() {
-		println!("Closing account...");
-		twilio
-			.accounts().update(
-				account_sid,
-				None,
-				Some(&Status::Suspended),
-			)
-			.unwrap_or_else(|error| panic!("{}", error));
+    let confirmation_prompt =
+        Confirm::new("Are you sure you wish to Close this account? Activity will be disabled and this action cannot be reversed. (Yes / No)");
+    let confirmation = prompt_user(confirmation_prompt);
+    if confirmation.is_some() && confirmation.unwrap() == true {
+        println!("Closing account...");
+        twilio
+            .accounts()
+            .update(account_sid, None, Some(&Status::Suspended))
+            .unwrap_or_else(|error| panic!("{}", error));
 
-		println!("Account closed. This account will still be visible in the console for 30 days.");
-		for acc in accounts {
+        println!("Account closed. This account will still be visible in the console for 30 days.");
+        for acc in accounts {
             if acc.sid == account_sid {
                 acc.status = Status::Closed;
             }
         }
-	} else {
-		println!("Operation canceled. No changes were made.");
-	}
+        return;
+    }
+
+    println!("Operation canceled. No changes were made.");
 }
