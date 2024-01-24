@@ -5,7 +5,7 @@ use std::{process, str::FromStr};
 
 use inquire::{Confirm, Select};
 use strum::IntoEnumIterator;
-use twilio_cli::{prompt_user, request_credentials};
+use twilio_cli::{prompt_user_selection, request_credentials};
 use twilio_rust::{self, SubResource, TwilioConfig};
 
 fn main() {
@@ -63,7 +63,7 @@ fn main() {
         let mut exit_option = vec![String::from("Exit")];
         sub_resource_options.append(&mut exit_option);
         let sub_resource_choice_prompt = Select::new("Select a resource:", sub_resource_options);
-        let sub_resource_choice = prompt_user(sub_resource_choice_prompt);
+        let sub_resource_choice = prompt_user_selection(sub_resource_choice_prompt);
 
         if sub_resource_choice.is_none() {
             process::exit(0);
@@ -92,10 +92,10 @@ fn print_welcome_message() {
     println!("");
     println!("");
     println!(
-        " _____          _ _ _          ____            _   
-|_   _|_      _(_) (_) ___    |  _ \\ _   _ ___| |_ 
+        " _____          _ _ _          ____            _
+|_   _|_      _(_) (_) ___    |  _ \\ _   _ ___| |_
   | | \\ \\ /\\ / / | | |/ _ \\   | |_) | | | / __| __|
-  | |  \\ V  V /| | | | (_) |  |  _ <| |_| \\__ \\ |_ 
+  | |  \\ V  V /| | | | (_) |  |  _ <| |_| \\__ \\ |_
   |_|   \\_/\\_/ |_|_|_|\\___/___|_| \\_\\\\__,_|___/\\__|
                          |_____|                   "
     );

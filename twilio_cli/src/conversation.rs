@@ -49,30 +49,33 @@ pub fn choose_conversation_account(twilio: &Client) {
                 let get_result = twilio.conversations().get(&conversation_sid);
 
                 if get_result.is_ok() {
-                    let conversation_action_choice =
-                        get_action_choice_from_user(vec!["Delete".into()], "Select an action: ");
+                    let conversation_action_choice = get_action_choice_from_user(
+                        vec![String::from("Delete")],
+                        "Select an action: ",
+                    );
 
                     match conversation_action_choice {
-                        ActionChoice::Back => break,
-                        ActionChoice::Exit => process::exit(0),
-                        ActionChoice::Other(choice) => {
-                            match choice.as_str() {
+                        Some(conversation_action) => match conversation_action {
+                            ActionChoice::Back => break,
+                            ActionChoice::Exit => process::exit(0),
+                            ActionChoice::Other(choice) => match choice.as_str() {
                                 "Delete" => {
                                     if Confirm::new(
-                                    "Are you sure to wish to delete the Conversation? (Yes / No)",
-                                )
-                                .prompt()
-                                .unwrap()
-                                {
+                                        "Are you sure to wish to delete the Conversation? (Yes / No)",
+                                    )
+                                    .prompt()
+                                    .unwrap()
+                                    {
 									println!("Deleting Conversation...");
-                                    twilio.conversations().delete(&conversation_sid).unwrap_or_else(|error| panic!("{}", error) );
+                                        twilio.conversations().delete(&conversation_sid).unwrap_or_else(|error| panic!("{}", error) );
 									println!("Conversation deleted.");
 									println!();
-                                }
+                                    }
                                 }
                                 _ => println!("Unknown action '{}'", choice),
-                            }
-                        }
+                            },
+                        },
+                        None => break,
                     }
                 } else {
                     let get_error = get_result.unwrap_err();

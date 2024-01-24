@@ -36,25 +36,51 @@ pub fn request_credentials() -> TwilioConfig {
     TwilioConfig::build(account_sid, auth_token)
 }
 
-trait InquireControl<T> {
+pub trait InquireControl<T> {
     fn prompt_user(&self) -> Result<T, InquireError>;
 }
 
 impl InquireControl<String> for Text<'_> {
     fn prompt_user(&self) -> Result<String, InquireError> {
-        self.prompt()
+        self.clone().prompt()
     }
 }
 
 impl InquireControl<String> for Password<'_> {
     fn prompt_user(&self) -> Result<String, InquireError> {
-        self.prompt()
+        self.clone().prompt()
     }
 }
 
-impl<T: Display + Copy> InquireControl<T> for Select<'_, T> {
-    fn prompt_user(&self) -> Result<T, InquireError> {
-        self.prompt()
+// Examines an error from Inquire to determine the cause. If the user
+// canceled an operation (pressed ESC) then the program returns. All
+// other errors are determined fatal and will terminate the program
+// through a panic or exit.
+fn handle_inquire_error<T>(error: InquireError) -> Option<T> {
+    match error {
+        inquire::InquireError::OperationCanceled => None,
+        inquire::InquireError::OperationInterrupted => {
+            eprintln!("Operation interrupted. Closing program.");
+            process::exit(130);
+        }
+        inquire::InquireError::IO(err) => {
+            panic!("Unhandled IO Error: {}", err);
+        }
+        inquire::InquireError::NotTTY => {
+            panic!("Unable to handle non-TTY input device.");
+        }
+        inquire::InquireError::InvalidConfiguration(err) => {
+            panic!(
+                "Invalid configuration for select, multi_select, or date_select: {}",
+                err
+            );
+        }
+        inquire::InquireError::Custom(err) => {
+            panic!(
+                "Custom user error caught at root. This probably shouldn't have happened :/ {}",
+                err
+            );
+        }
     }
 }
 
@@ -65,35 +91,20 @@ impl<T: Display + Copy> InquireControl<T> for Select<'_, T> {
 pub fn prompt_user<T>(control: impl InquireControl<T>) -> Option<T> {
     match control.prompt_user() {
         Ok(result) => Some(result),
-        // Examines an error from Inquire to determine the cause. If the user
-        // canceled an operation (pressed ESC) then the program returns. All
-        // other errors are determined fatal and will terminate the program
-        // through a panic or exit.
-        Err(error) => match error {
-            inquire::InquireError::OperationCanceled => None,
-            inquire::InquireError::OperationInterrupted => {
-                eprintln!("Operation interrupted. Closing program.");
-                process::exit(130);
-            }
-            inquire::InquireError::IO(err) => {
-                panic!("Unhandled IO Error: {}", err);
-            }
-            inquire::InquireError::NotTTY => {
-                panic!("Unable to handle non-TTY input device.");
-            }
-            inquire::InquireError::InvalidConfiguration(err) => {
-                panic!(
-                    "Invalid configuration for select, multi_select, or date_select: {}",
-                    err
-                );
-            }
-            inquire::InquireError::Custom(err) => {
-                panic!(
-                    "Custom user error caught at root. This probably shouldn't have happened :/ {}",
-                    err
-                );
-            }
-        },
+        Err(error) => handle_inquire_error(error),
+    }
+}
+
+/// Prompts the user a selection from the provided options. Takes
+/// any form of Inquires Select and returns the output
+/// from the user. If `None` is returned it is assumed the user
+/// un-forcefully cancelled the action, e.g. pressed ESC.
+///
+/// This has the same pattern as `prompt_user` for obvious reasons.
+pub fn prompt_user_selection<T: Display>(control: Select<'_, T>) -> Option<T> {
+    match control.prompt() {
+        Ok(result) => Some(result),
+        Err(error) => handle_inquire_error(error),
     }
 }
 
@@ -113,7 +124,7 @@ pub fn get_filter_choice_from_user(
 ) -> Option<FilterChoice> {
     filter_options.insert(0, String::from("Any"));
     let filter_choice_prompt = Select::new(message, filter_options);
-    let filter_choice_opt = prompt_user(filter_choice_prompt);
+    let filter_choice_opt = prompt_user_selection(filter_choice_prompt);
 
     if filter_choice_opt.is_some() {
         let filter_choice = filter_choice_opt.unwrap();
@@ -146,7 +157,7 @@ pub fn get_action_choice_from_user(
     action_options.append(&mut back_and_exit_options);
 
     let action_choice_prompt = Select::new(message, action_options);
-    let action_choice_opt = prompt_user(action_choice_prompt);
+    let action_choice_opt = prompt_user_selection(action_choice_prompt);
     let action_choice = action_choice_opt.unwrap();
 
     match action_choice.as_str() {

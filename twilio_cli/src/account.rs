@@ -4,8 +4,8 @@ use inquire::{validator::Validation, Confirm, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use twilio_cli::{
-    get_action_choice_from_user, get_filter_choice_from_user, prompt_user, ActionChoice,
-    FilterChoice,
+    get_action_choice_from_user, get_filter_choice_from_user, prompt_user, prompt_user_selection,
+    ActionChoice, FilterChoice,
 };
 use twilio_rust::{
     account::{Account, Status},
@@ -29,7 +29,7 @@ pub fn choose_account_action(twilio: &Client) {
 
     loop {
         let action_selection_prompt = Select::new("Select an action:", options.clone());
-        let action_selection = prompt_user(action_selection_prompt);
+        let action_selection = prompt_user_selection(action_selection_prompt);
         if action_selection.is_none() {
             break;
         }
