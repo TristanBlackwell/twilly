@@ -57,13 +57,13 @@ impl fmt::Display for Conversation {
 )]
 pub enum State {
     #[strum(serialize = "active")]
-    #[serde(rename = "Active")]
+    #[serde(rename = "active")]
     Active,
     #[strum(serialize = "inactive")]
-    #[serde(rename = "Inactive")]
+    #[serde(rename = "inactive")]
     Inactive,
     #[strum(serialize = "closed")]
-    #[serde(rename = "Closed")]
+    #[serde(rename = "closed")]
     Closed,
 }
 
@@ -193,7 +193,7 @@ impl<'a> Conversations<'a> {
     ///
     /// Takes in a `sid` argument which can also be the conversations `uniqueName` and **deletes** the resource.
     pub fn delete(&self, sid: &str) -> Result<(), TwilioError> {
-        let conversation = self.client.send_request::<()>(
+        let conversation = self.client.send_request_and_ignore_response(
             Method::DELETE,
             &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
             None,
@@ -209,7 +209,7 @@ impl<'a> Conversations<'a> {
         conversations
             .into_iter()
             .try_for_each(|conversation| -> Result<(), TwilioError> {
-                self.client.send_request::<()>(
+                self.client.send_request_and_ignore_response(
                     Method::DELETE,
                     &format!(
                         "https://conversations.twilio.com/v1/Conversations/{}",
