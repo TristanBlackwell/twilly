@@ -5,7 +5,7 @@ use std::{process, str::FromStr};
 
 use inquire::{Confirm, Select};
 use strum::IntoEnumIterator;
-use twilio_cli::request_credentials;
+use twilio_cli::{prompt_user, request_credentials};
 use twilio_rust::{self, SubResource, TwilioConfig};
 
 fn main() {
@@ -62,16 +62,21 @@ fn main() {
             .collect();
         let mut exit_option = vec![String::from("Exit")];
         sub_resource_options.append(&mut exit_option);
-        let sub_resource_choice = Select::new("Select a resource:", sub_resource_options)
-            .prompt()
-            .unwrap();
+        let sub_resource_choice_prompt = Select::new("Select a resource:", sub_resource_options);
+        let sub_resource_choice = prompt_user(sub_resource_choice_prompt);
 
-        // Top level so only 'exit' option.
-        if sub_resource_choice == "Exit" {
+        if sub_resource_choice.is_none() {
             process::exit(0);
         }
 
-        let sub_resource = SubResource::from_str(&sub_resource_choice).unwrap();
+        let sub_resource = sub_resource_choice.unwrap();
+
+        // Top level so only 'exit' option.
+        if sub_resource == "Exit" {
+            process::exit(0);
+        }
+
+        let sub_resource = SubResource::from_str(&sub_resource).unwrap();
 
         match sub_resource {
             twilio_rust::SubResource::Account => account::choose_account_action(&twilio),

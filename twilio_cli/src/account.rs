@@ -4,14 +4,15 @@ use inquire::{validator::Validation, Confirm, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use twilio_cli::{
-    get_action_choice_from_user, get_filter_choice_from_user, ActionChoice, FilterChoice,
+    get_action_choice_from_user, get_filter_choice_from_user, prompt_user, ActionChoice,
+    FilterChoice,
 };
 use twilio_rust::{
     account::{Account, Status},
     Client,
 };
 
-#[derive(Clone, Display, EnumIter, EnumString)]
+#[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum Action {
     #[strum(serialize = "Get account")]
     GetAccount,
@@ -27,11 +28,16 @@ pub fn choose_account_action(twilio: &Client) {
     let options: Vec<Action> = Action::iter().collect();
 
     loop {
-        let action_selection = Select::new("Select an action:", options.clone()).prompt();
+        let action_selection_prompt = Select::new("Select an action:", options.clone());
+        let action_selection = prompt_user(action_selection_prompt);
+        if action_selection.is_none() {
+            break;
+        }
+
         let action = action_selection.unwrap();
         match action {
             Action::GetAccount => {
-                let account_sid = Text::new("Please provide an account SID:")
+                let account_sid_prompt = Text::new("Please provide an account SID:")
                     .with_placeholder("AC...")
                     .with_validator(|val: &str| match val.starts_with("AC") {
                         true => Ok(Validation::Valid),
@@ -42,148 +48,185 @@ pub fn choose_account_action(twilio: &Client) {
                         _ => Ok(Validation::Invalid(
                             "Your SID should be 34 characters in length".into(),
                         )),
-                    })
-                    .prompt()
-                    .unwrap();
-                let account = twilio
-                    .accounts()
-                    .get(Some(&account_sid))
-                    .unwrap_or_else(|error| panic!("{}", error));
-                println!("{:#?}", account);
-                println!();
+                    });
+                let account_sid = prompt_user(account_sid_prompt);
+
+                if account_sid.is_some() {
+                    let account = twilio
+                        .accounts()
+                        .get(Some(&account_sid.unwrap()))
+                        .unwrap_or_else(|error| panic!("{}", error));
+                    println!("{:#?}", account);
+                    println!();
+                }
             }
             Action::CreateAccount => {
-                let friendly_name = Text::new("Enter a friendly name (empty for default):")
-                    .prompt()
-                    .unwrap();
+                let friendly_name_prompt = Text::new("Enter a friendly name (empty for default):");
+                let friendly_name = prompt_user(friendly_name_prompt);
 
-                println!("Creating account...");
-                let account = twilio
-                    .accounts()
-                    .create(Some(&friendly_name))
-                    .unwrap_or_else(|error| panic!("{}", error));
-                println!(
-                    "Account created: {} ({})",
-                    account.friendly_name, account.sid
-                );
+                if friendly_name.is_some() {
+                    println!("Creating account...");
+                    let account = twilio
+                        .accounts()
+                        .create(Some(&friendly_name.unwrap()))
+                        .unwrap_or_else(|error| panic!("{}", error));
+                    println!(
+                        "Account created: {} ({})",
+                        account.friendly_name, account.sid
+                    );
+                }
             }
             Action::ListAccounts => {
-                let friendly_name = Text::new("Search by friendly name? (empty for none):")
-                    .prompt()
-                    .unwrap();
+                let friendly_name_prompt = Text::new("Search by friendly name? (empty for none):");
+                let friendly_name_opt = prompt_user(friendly_name_prompt);
 
-                let status = match get_filter_choice_from_user(
-                    Status::iter().map(|status| status.to_string()).collect(),
-                    "Filter by status: ",
-                ) {
-                    FilterChoice::Any => None,
-                    FilterChoice::Other(choice) => Some(Status::from_str(&choice).unwrap()),
-                };
-
-                println!("Retrieving accounts...");
-                let mut accounts = twilio
-                    .accounts()
-                    .list(Some(&friendly_name), status.as_ref())
-                    .unwrap_or_else(|error| panic!("{}", error));
-
-                // The accounts we can perform on the account we are currently using are limited.
-                // Remove from the list.
-                accounts.retain(|ac| ac.sid != twilio.config.account_sid);
-
-                if accounts.len() == 0 {
-                    println!("No accounts found.");
-                    break;
-                }
-
-                println!("Found {} accounts.", accounts.len());
-
-                let mut modifiable_accounts = accounts.clone();
-
-                loop {
-                    let account_action_choice = get_action_choice_from_user(
-                        modifiable_accounts
-                            .iter()
-                            .map(|ac| format!("({}) {} - {}", ac.sid, ac.friendly_name, ac.status))
-                            .collect::<Vec<String>>(),
-                        "Accounts: ",
-                    );
-
-                    let selected_account = match account_action_choice {
-                        ActionChoice::Back => break,
-                        ActionChoice::Exit => process::exit(0),
-                        ActionChoice::Other(choice) => {
-                            accounts.iter().find(|ac| ac.sid == choice[1..35]).unwrap()
-                        }
+                if friendly_name_opt.is_some() {
+                    let friendly_name = friendly_name_opt.unwrap();
+                    let status = match get_filter_choice_from_user(
+                        Status::iter().map(|status| status.to_string()).collect(),
+                        "Filter by status: ",
+                    ) {
+                        Some(status) => match status {
+                            FilterChoice::Any => None,
+                            FilterChoice::Other(choice) => Some(Status::from_str(&choice).unwrap()),
+                        },
+                        None => None,
                     };
 
-                    match selected_account.status.as_str() {
-                        "active" => {
-                            let selected_account_action = get_action_choice_from_user(
-                                vec!["Change name".into(), "Suspend".into(), "Close".into()],
-                                "Select an action: ",
+                    if status.is_some() {
+                        println!("Retrieving accounts...");
+                        let mut accounts = twilio
+                            .accounts()
+                            .list(Some(&friendly_name), status.as_ref())
+                            .unwrap_or_else(|error| panic!("{}", error));
+
+                        // The accounts we can perform on the account we are currently using are limited.
+                        // Remove from the list.
+                        accounts.retain(|ac| ac.sid != twilio.config.account_sid);
+
+                        if accounts.len() == 0 {
+                            println!("No accounts found.");
+                            break;
+                        }
+
+                        println!("Found {} accounts.", accounts.len());
+
+                        let mut modifiable_accounts = accounts.clone();
+
+                        loop {
+                            let account_action_choice = get_action_choice_from_user(
+                                modifiable_accounts
+                                    .iter()
+                                    .map(|ac| {
+                                        format!("({}) {} - {}", ac.sid, ac.friendly_name, ac.status)
+                                    })
+                                    .collect::<Vec<String>>(),
+                                "Accounts: ",
                             );
 
-                            match selected_account_action {
-                                ActionChoice::Back => break,
-                                ActionChoice::Exit => process::exit(0),
-                                ActionChoice::Other(choice) => match choice.as_str() {
-                                    "Change name" => {
-                                        change_account_name(
-                                            twilio,
-                                            &selected_account.sid,
-                                            &mut modifiable_accounts,
-                                        );
+                            let selected_account = match account_action_choice {
+                                Some(account_action) => match account_action {
+                                    ActionChoice::Back => break,
+                                    ActionChoice::Exit => process::exit(0),
+                                    ActionChoice::Other(choice) => {
+                                        accounts.iter().find(|ac| ac.sid == choice[1..35]).unwrap()
                                     }
-                                    "Suspend" => {
-                                        suspend_account(
-                                            twilio,
-                                            &selected_account.sid,
-                                            &mut modifiable_accounts,
-                                        );
-                                    }
-                                    "Close" => {
-                                        close_account(
-                                            twilio,
-                                            &selected_account.sid,
-                                            &mut modifiable_accounts,
-                                        );
-                                    }
-                                    _ => println!("Unknown action '{}'", choice),
                                 },
+                                None => break,
                             };
-                        }
-                        "suspended" => {
-                            let selected_account_action = get_action_choice_from_user(
-                                vec!["Change name".into(), "Activate".into()],
-                                "Select an action: ",
-                            );
 
-                            match selected_account_action {
-                                ActionChoice::Back => break,
-                                ActionChoice::Exit => process::exit(0),
-                                ActionChoice::Other(choice) => match choice.as_str() {
-                                    "Change name" => change_account_name(
-                                        twilio,
-                                        &selected_account.sid,
-                                        &mut modifiable_accounts,
-                                    ),
-                                    "Activate" => activate_account(
-                                        twilio,
-                                        &selected_account.sid,
-                                        &mut modifiable_accounts,
-                                    ),
-                                    _ => println!("Unknown action '{}'", choice),
-                                },
-                            };
-                        }
-                        "closed" => {
-                            println!(
-                                "{} is a closed account and can no longer be used.",
-                                selected_account.sid
-                            );
-                        }
-                        _ => {
-                            println!("Unknown account type '{}'", selected_account.status);
+                            match selected_account.status.as_str() {
+                                "active" => {
+                                    let selected_account_action = get_action_choice_from_user(
+                                        vec![
+                                            "Change name".into(),
+                                            "Suspend".into(),
+                                            "Close".into(),
+                                        ],
+                                        "Select an action: ",
+                                    );
+
+                                    match selected_account_action {
+                                        Some(selected_account_action) => {
+                                            match selected_account_action {
+                                                ActionChoice::Back => break,
+                                                ActionChoice::Exit => process::exit(0),
+                                                ActionChoice::Other(choice) => {
+                                                    match choice.as_str() {
+                                                        "Change name" => {
+                                                            change_account_name(
+                                                                twilio,
+                                                                &selected_account.sid,
+                                                                &mut modifiable_accounts,
+                                                            );
+                                                        }
+                                                        "Suspend" => {
+                                                            suspend_account(
+                                                                twilio,
+                                                                &selected_account.sid,
+                                                                &mut modifiable_accounts,
+                                                            );
+                                                        }
+                                                        "Close" => {
+                                                            close_account(
+                                                                twilio,
+                                                                &selected_account.sid,
+                                                                &mut modifiable_accounts,
+                                                            );
+                                                        }
+                                                        _ => {
+                                                            println!("Unknown action '{}'", choice)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        None => break,
+                                    }
+                                }
+                                "suspended" => {
+                                    let selected_account_action = get_action_choice_from_user(
+                                        vec!["Change name".into(), "Activate".into()],
+                                        "Select an action: ",
+                                    );
+
+                                    match selected_account_action {
+                                        Some(selected_account_action) => {
+                                            match selected_account_action {
+                                                ActionChoice::Back => break,
+                                                ActionChoice::Exit => process::exit(0),
+                                                ActionChoice::Other(choice) => {
+                                                    match choice.as_str() {
+                                                        "Change name" => change_account_name(
+                                                            twilio,
+                                                            &selected_account.sid,
+                                                            &mut modifiable_accounts,
+                                                        ),
+                                                        "Activate" => activate_account(
+                                                            twilio,
+                                                            &selected_account.sid,
+                                                            &mut modifiable_accounts,
+                                                        ),
+                                                        _ => {
+                                                            println!("Unknown action '{}'", choice)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        None => break,
+                                    };
+                                }
+                                "closed" => {
+                                    println!(
+                                        "{} is a closed account and can no longer be used.",
+                                        selected_account.sid
+                                    );
+                                }
+                                _ => {
+                                    println!("Unknown account type '{}'", selected_account.status);
+                                }
+                            }
                         }
                     }
                 }

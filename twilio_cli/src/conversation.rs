@@ -98,31 +98,36 @@ pub fn choose_conversation_account(twilio: &Client) {
 
                 let state: Option<State> = match get_filter_choice_from_user(
                     State::iter().map(|state| state.to_string()).collect(),
-                    "Filter by state?:",
+                    "Filter by state? ",
                 ) {
-                    FilterChoice::Any => None,
-                    FilterChoice::Other(choice) => Some(State::from_str(&choice).unwrap()),
+                    Some(state_choice) => match state_choice {
+                        FilterChoice::Any => None,
+                        FilterChoice::Other(choice) => Some(State::from_str(&choice).unwrap()),
+                    },
+                    None => None,
                 };
 
-                println!("Fetching conversations...");
-                let conversations = twilio
-                    .conversations()
-                    .list(start_date, end_date, state)
-                    .unwrap_or_else(|error| panic!("{}", error));
+                if state.is_some() {
+                    println!("Fetching conversations...");
+                    let conversations = twilio
+                        .conversations()
+                        .list(start_date, end_date, state)
+                        .unwrap_or_else(|error| panic!("{}", error));
 
-                if conversations.len() == 0 {
-                    println!("No conversations found.");
-                    println!();
-                } else {
-                    println!("Found {} conversations.", conversations.len());
-                    conversations
-                        .into_iter()
-                        .for_each(|conv| match conv.unique_name {
-                            Some(unique_name) => {
-                                println!("({}) {} - {}", conv.sid, unique_name, conv.state)
-                            }
-                            None => println!("{} - {}", conv.sid, conv.state),
-                        });
+                    if conversations.len() == 0 {
+                        println!("No conversations found.");
+                        println!();
+                    } else {
+                        println!("Found {} conversations.", conversations.len());
+                        conversations
+                            .into_iter()
+                            .for_each(|conv| match conv.unique_name {
+                                Some(unique_name) => {
+                                    println!("({}) {} - {}", conv.sid, unique_name, conv.state)
+                                }
+                                None => println!("{} - {}", conv.sid, conv.state),
+                            });
+                    }
                 }
             }
             Action::DeleteConversation => {
