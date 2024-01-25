@@ -1,3 +1,8 @@
+/*!
+
+Contains Twilio conversations related functionality.
+
+*/
 use std::{collections::HashMap, fmt};
 
 use reqwest::Method;
@@ -6,10 +11,13 @@ use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 
 use crate::{Client, TwilioError};
 
+/// Holds conversation related functions accessible
+/// on the client.
 pub struct Conversations<'a> {
     pub client: &'a Client,
 }
 
+/// Represents a page of conversations from the Twilio API.
 #[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct ConversationPage {
@@ -17,6 +25,7 @@ pub struct ConversationPage {
     meta: ConversationPageMeta,
 }
 
+/// Holds the actual page information from the API.
 #[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct ConversationPageMeta {
@@ -28,7 +37,7 @@ pub struct ConversationPageMeta {
     key: String,
 }
 
-/// Details related to a specific account.
+/// Details related to a specific conversation.
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Conversation {
     pub sid: String,
@@ -52,6 +61,7 @@ impl fmt::Display for Conversation {
     }
 }
 
+/// The possible states of a conversation.
 #[derive(
     AsRefStr, Clone, Display, Debug, EnumIter, EnumString, Serialize, Deserialize, PartialEq,
 )]
@@ -83,6 +93,7 @@ impl State {
     }
 }
 
+/// The timers configured for a conversation.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Timers {
     pub date_inactive: Option<String>,
@@ -98,6 +109,7 @@ impl Default for Timers {
     }
 }
 
+/// Links to resources _linked_ to a conversation
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub participants: String,

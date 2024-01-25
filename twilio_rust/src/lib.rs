@@ -1,3 +1,37 @@
+/*! This crate is an *synchronous* implementation of the Twilio API in Rust built
+upon Reqwest and Serde.
+
+Coverage is partial yet provides an idiomatic usage pattern currently covering:
+
+- Accounts
+- Conversations
+
+This crate has been developed alongside the `twilio-cli` crate which provides an
+enhanced Twilio CLI experience.
+
+# Example
+
+Interaction is done via a Twilio client that can be created via a constructor. The config
+parameter is a `TwilioConfig` struct of an account SID & auth token pair.
+
+```
+let twilio = twilio_rust::Client::new(&config);
+```
+
+To retrieve accounts from the client:
+
+```
+twilio.accounts().list(Some(&friendly_name), None);
+```
+
+To delete a conversation:
+
+```
+twilio.conversations().delete(&conversation_sid);
+```
+
+*/
+
 pub mod account;
 pub mod conversation;
 
@@ -13,7 +47,9 @@ use strum_macros::{Display, EnumIter, EnumString};
 /// authenticating requests to Twilio.
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 pub struct TwilioConfig {
+    /// Twilio account SID, begins with AC...
     pub account_sid: String,
+    /// Twilio account auth token
     pub auth_token: String,
 }
 
@@ -43,12 +79,14 @@ impl TwilioConfig {
 }
 
 /// The Twilio client used for interaction with
-/// Twilio's API
+/// Twilio's API.
 pub struct Client {
     pub config: TwilioConfig,
     client: reqwest::blocking::Client,
 }
 
+/// Crate error wrapping containing a `kind` used
+/// to differentiate errors.
 pub struct TwilioError {
     pub kind: ErrorKind,
 }
@@ -104,6 +142,7 @@ impl fmt::Display for TwilioApiError {
     }
 }
 
+/// Available Twilio resources to access.
 #[derive(Display, EnumIter, EnumString, PartialEq)]
 pub enum SubResource {
     Account,
@@ -111,7 +150,8 @@ pub enum SubResource {
 }
 
 impl Client {
-    /// Create a Twilio client ready to send requests.
+    /// Create a Twilio client ready to send requests based on the
+    /// provided config.
     pub fn new(config: &TwilioConfig) -> Self {
         Self {
             config: config.clone(),
@@ -217,10 +257,12 @@ impl Client {
         })
     }
 
+    /// Account related functions.
     pub fn accounts<'a>(&'a self) -> Accounts {
         Accounts { client: self }
     }
 
+    /// Conversation related functions.
     pub fn conversations<'a>(&'a self) -> Conversations {
         Conversations { client: self }
     }

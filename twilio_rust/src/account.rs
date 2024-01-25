@@ -1,3 +1,9 @@
+/*!
+
+Contains Twilio account related functionality.
+
+*/
+
 use std::{collections::HashMap, fmt};
 
 use reqwest::Method;
@@ -6,10 +12,13 @@ use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 
 use crate::{Client, TwilioError};
 
+/// Holds account related functions accessible
+/// on the client.
 pub struct Accounts<'a> {
     pub client: &'a Client,
 }
 
+/// Represents a page of accounts from the Twilio API.
 #[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct AccountPage {
@@ -45,6 +54,7 @@ impl fmt::Display for Account {
     }
 }
 
+/// Possible account statuses.
 #[derive(
     AsRefStr, Clone, Display, Debug, EnumIter, EnumString, Serialize, Deserialize, PartialEq,
 )]
