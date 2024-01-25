@@ -1,7 +1,9 @@
 use std::{fmt::Display, process};
 
+use chrono::NaiveDate;
 use inquire::{
-    validator::Validation, Confirm, InquireError, Password, PasswordDisplayMode, Select, Text,
+    validator::Validation, Confirm, DateSelect, InquireError, Password, PasswordDisplayMode,
+    Select, Text,
 };
 use twilio_rust::TwilioConfig;
 
@@ -56,6 +58,12 @@ impl InquireControl<String> for Password<'_> {
 
 impl InquireControl<bool> for Confirm<'_> {
     fn prompt_user(&self) -> Result<bool, InquireError> {
+        self.clone().prompt()
+    }
+}
+
+impl InquireControl<NaiveDate> for DateSelect<'_> {
+    fn prompt_user(&self) -> Result<NaiveDate, InquireError> {
         self.clone().prompt()
     }
 }
