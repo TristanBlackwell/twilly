@@ -1,3 +1,21 @@
+/*! This crate is a CLI tool for interacting the Twilio API.
+
+Coverage is partial yet offers a user-friendly way to interact
+with Twilio via the terminal. The CLI currently covers:
+
+- Accounts
+- Conversations
+
+This crate has been developed alongside the `twilio-rust` crate which backs
+the functionality of the crate.
+
+# Features
+
+- Local _profile_ memory to avoid repeatedly providing Twilio credentials.
+- Intuitive account & conversation related controls.
+- Additional _helpers_ not found in the default Twilio CLI.
+
+*/
 use std::{fmt::Display, process};
 
 use chrono::NaiveDate;
@@ -40,6 +58,8 @@ pub fn request_credentials() -> TwilioConfig {
     TwilioConfig::build(account_sid, auth_token)
 }
 
+/// A wrapper around the Inquire crates various input controls. This is used
+/// to abstract the prompting and handling errors or cancellations.
 pub trait InquireControl<T> {
     fn prompt_user(&self) -> Result<T, InquireError>;
 }
@@ -124,8 +144,11 @@ pub fn prompt_user_selection<T: Display>(control: Select<'_, T>) -> Option<T> {
     }
 }
 
+/// The options available to filter search results.
 pub enum FilterChoice {
+    /// Any option, not limited to anything.
     Any,
+    /// One of the provided options, dependant on application state.
     Other(String),
 }
 
@@ -154,9 +177,13 @@ pub fn get_filter_choice_from_user(
     }
 }
 
+/// The possible actions a user may make.
 pub enum ActionChoice {
+    /// Navigate backwards in the menu.
     Back,
+    /// Exit the application completely.
     Exit,
+    /// An option provided, dependent on the state of the application.
     Other(String),
 }
 
@@ -174,11 +201,13 @@ pub fn get_action_choice_from_user(
 
     let action_choice_prompt = Select::new(message, action_options);
     let action_choice_opt = prompt_user_selection(action_choice_prompt);
-    let action_choice = action_choice_opt.unwrap();
 
-    match action_choice.as_str() {
-        "Back" => return Some(ActionChoice::Back),
-        "Exit" => return Some(ActionChoice::Exit),
-        _ => return Some(ActionChoice::Other(action_choice)),
+    match action_choice_opt {
+        Some(action_choice) => match action_choice.as_str() {
+            "Back" => return Some(ActionChoice::Back),
+            "Exit" => return Some(ActionChoice::Exit),
+            _ => return Some(ActionChoice::Other(action_choice)),
+        },
+        None => None,
     }
 }

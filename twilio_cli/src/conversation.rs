@@ -8,7 +8,10 @@ use twilio_cli::{
     get_action_choice_from_user, get_filter_choice_from_user, prompt_user, prompt_user_selection,
     ActionChoice, FilterChoice,
 };
-use twilio_rust::{conversation::State, Client, ErrorKind};
+use twilio_rust::{
+    conversation::{Conversation, State},
+    Client, ErrorKind,
+};
 
 #[derive(Clone, Display, EnumIter, EnumString)]
 pub enum Action {
@@ -116,7 +119,7 @@ pub fn choose_conversation_account(twilio: &Client) {
                 let filter_dates_prompt =
                     Confirm::new("Would you like to filter between specified dates? (Yes / No)");
                 let filter_dates_opt = prompt_user(filter_dates_prompt);
-                if filter_dates_opt.is_some() {
+                if filter_dates_opt.is_some() && filter_dates_opt.unwrap() == true {
                     user_filtered_dates = true;
                     let utc_now = chrono::Utc::now();
                     let utc_one_year_ago = utc_now - chrono::Duration::days(365);
@@ -160,7 +163,9 @@ pub fn choose_conversation_account(twilio: &Client) {
 
                 // Only continue if the user filtered by dates *and* provided both options.
                 // If they didn't then they must of cancelled the operation.
-                if user_filtered_dates && (start_date.is_some() && end_date.is_some()) {
+                if !user_filtered_dates
+                    || user_filtered_dates && (start_date.is_some() && end_date.is_some())
+                {
                     let state_choice_opt = get_filter_choice_from_user(
                         State::iter().map(|state| state.to_string()).collect(),
                         "Filter by state? ",
@@ -183,14 +188,187 @@ pub fn choose_conversation_account(twilio: &Client) {
                             println!();
                         } else {
                             println!("Found {} conversations.", conversations.len());
-                            conversations
-                                .into_iter()
-                                .for_each(|conv| match conv.unique_name {
-                                    Some(unique_name) => {
-                                        println!("({}) {} - {}", conv.sid, unique_name, conv.state)
-                                    }
-                                    None => println!("{} - {}", conv.sid, conv.state),
-                                });
+                            let mut modifiable_conversations = conversations.clone();
+
+                            loop {
+                                let conversation_action_choice = get_action_choice_from_user(
+                                    modifiable_conversations
+                                        .iter()
+                                        .map(|conv| {
+                                            let display_name = match &conv.unique_name {
+                                                Some(unique_name) => format!(
+                                                    "({}) {} - {}",
+                                                    conv.sid, unique_name, conv.state
+                                                ),
+                                                None => format!("{} - {}", conv.sid, conv.state),
+                                            };
+                                            display_name
+                                        })
+                                        .collect::<Vec<String>>(),
+                                    "Conversations: ",
+                                );
+
+                                let selected_conversation = match conversation_action_choice {
+                                    Some(conversation_action) => match conversation_action {
+                                        ActionChoice::Back => break,
+                                        ActionChoice::Exit => process::exit(0),
+                                        ActionChoice::Other(choice) => conversations
+                                            .iter()
+                                            .find(|conv| conv.sid == choice[..34])
+                                            .unwrap(),
+                                    },
+                                    None => break,
+                                };
+
+                                println!("Conversation: {:#?}", selected_conversation);
+
+                                match selected_conversation.state {
+                                    State::Closed => loop {
+                                        let conversation_action_choice =
+                                            get_action_choice_from_user(
+                                                vec![
+                                                    String::from("List details"),
+                                                    String::from("Delete"),
+                                                ],
+                                                "Select an action: ",
+                                            );
+
+                                        match conversation_action_choice {
+                                            Some(conversation_action) => {
+                                                match conversation_action {
+                                                    ActionChoice::Back => break,
+                                                    ActionChoice::Exit => process::exit(0),
+                                                    ActionChoice::Other(choice) => {
+                                                        match choice.as_str() {
+                                                            "List details" => {
+                                                                println!(
+                                                                    "{:#?}",
+                                                                    selected_conversation
+                                                                );
+                                                                println!();
+                                                            }
+                                                            "Delete" => {
+                                                                delete_conversation(
+                                                                    twilio,
+                                                                    &selected_conversation.sid,
+                                                                    Some(&mut modifiable_conversations),
+
+                                                                );
+                                                                break;
+                                                            }
+                                                            _ => {
+                                                                println!(
+                                                                    "Unknown action '{}'",
+                                                                    choice
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            None => break,
+                                        };
+                                    },
+                                    State::Inactive => loop {
+                                        let conversation_action_choice =
+                                            get_action_choice_from_user(
+                                                vec![
+                                                    String::from("List details"),
+                                                    String::from("Re-activate"),
+                                                    String::from("Delete"),
+                                                ],
+                                                "Select an action: ",
+                                            );
+
+                                        match conversation_action_choice {
+                                            Some(conversation_action) => {
+                                                match conversation_action {
+                                                    ActionChoice::Back => break,
+                                                    ActionChoice::Exit => process::exit(0),
+                                                    ActionChoice::Other(choice) => {
+                                                        match choice.as_str() {
+                                                            "List details" => {
+                                                                println!(
+                                                                    "{:#?}",
+                                                                    selected_conversation
+                                                                );
+                                                                println!();
+                                                            }
+                                                            "Re-activate" => {
+                                                                println!("TODO: re-activate conversation")
+                                                            }
+                                                            "Delete" => {
+                                                                delete_conversation(
+                                                                    twilio,
+                                                                    &selected_conversation.sid,
+                                                                    Some(&mut modifiable_conversations),
+                                                                );
+                                                                break;
+                                                            }
+                                                            _ => {
+                                                                println!(
+                                                                    "Unknown action '{}'",
+                                                                    choice
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            None => break,
+                                        };
+                                    },
+                                    State::Active => loop {
+                                        let conversation_action_choice =
+                                            get_action_choice_from_user(
+                                                vec![
+                                                    String::from("List details"),
+                                                    String::from("De-activate"),
+                                                    String::from("Delete"),
+                                                ],
+                                                "Select an action: ",
+                                            );
+
+                                        match conversation_action_choice {
+                                            Some(conversation_action) => {
+                                                match conversation_action {
+                                                    ActionChoice::Back => break,
+                                                    ActionChoice::Exit => process::exit(0),
+                                                    ActionChoice::Other(choice) => {
+                                                        match choice.as_str() {
+                                                            "List details" => {
+                                                                println!(
+                                                                    "{:#?}",
+                                                                    selected_conversation
+                                                                );
+                                                                println!();
+                                                            }
+                                                            "De-activate" => {
+                                                                println!("TODO: de-activate conversation")
+                                                            }
+                                                            "Delete" => {
+                                                                delete_conversation(
+                                                                    twilio,
+                                                                    &selected_conversation.sid,
+                                                                    Some(&mut modifiable_conversations),
+                                                                );
+                                                                break;
+                                                            }
+                                                            _ => {
+                                                                println!(
+                                                                    "Unknown action '{}'",
+                                                                    choice
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            None => break,
+                                        };
+                                    },
+                                }
+                            }
                         }
                     }
                 }
@@ -212,33 +390,7 @@ pub fn choose_conversation_account(twilio: &Client) {
 
                 if conversation_sid_opt.is_some() {
                     let conversation_sid = conversation_sid_opt.unwrap();
-                    let confirmation_prompt =
-                        Confirm::new("Are you sure to wish to delete the Conversation? (Yes / No)");
-                    let confirmation = prompt_user(confirmation_prompt);
-                    if confirmation.is_some() && confirmation.unwrap() == true {
-                        let delete_result = twilio.conversations().delete(&conversation_sid);
-
-                        if delete_result.is_ok() {
-                            println!("Conversation deleted.");
-                            println!("");
-                        } else {
-                            let delete_error = delete_result.unwrap_err();
-                            match delete_error.kind {
-                                ErrorKind::TwilioError(twilio_error) => {
-                                    if twilio_error.status == 404 {
-                                        println!(
-                                            "A Conversation with SID '{}' was not found.",
-                                            &conversation_sid
-                                        );
-                                        println!("");
-                                    } else {
-                                        panic!("{}", twilio_error)
-                                    }
-                                }
-                                _ => panic!("{}", delete_error),
-                            };
-                        }
-                    }
+                    delete_conversation(twilio, &conversation_sid, None);
                 } else {
                     println!("Operation canceled. No changes were made.");
                 }
@@ -271,6 +423,48 @@ pub fn choose_conversation_account(twilio: &Client) {
             }
             Action::Back => break,
             Action::Exit => process::exit(0),
+        }
+    }
+}
+
+/// Prompts the user for confirmation before deleting the conversation with
+/// the SID provided. Will panic if the delete operation fails.
+fn delete_conversation(
+    twilio: &Client,
+    conversation_sid: &str,
+    conversations: Option<&mut Vec<Conversation>>,
+) {
+    let confirmation_prompt =
+        Confirm::new("Are you sure to wish to delete the Conversation? (Yes / No)");
+    let confirmation = prompt_user(confirmation_prompt);
+    if confirmation.is_some() && confirmation.unwrap() == true {
+        let delete_result = twilio.conversations().delete(&conversation_sid);
+
+        if delete_result.is_ok() {
+            println!("Conversation deleted.");
+            println!("");
+
+            if conversations.is_some() {
+                conversations
+                    .unwrap()
+                    .retain(|conv| conv.sid != conversation_sid);
+            }
+        } else {
+            let delete_error = delete_result.unwrap_err();
+            match delete_error.kind {
+                ErrorKind::TwilioError(twilio_error) => {
+                    if twilio_error.status == 404 {
+                        println!(
+                            "A Conversation with SID '{}' was not found.",
+                            &conversation_sid
+                        );
+                        println!("");
+                    } else {
+                        panic!("{}", twilio_error)
+                    }
+                }
+                _ => panic!("{}", delete_error),
+            };
         }
     }
 }
