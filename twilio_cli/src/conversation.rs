@@ -10,7 +10,7 @@ use twilio_cli::{
 };
 use twilio_rust::{
     conversation::{Conversation, State},
-    Client, ErrorKind,
+    Client, ErrorKind, TwilioError,
 };
 
 #[derive(Clone, Display, EnumIter, EnumString)]
@@ -62,8 +62,12 @@ pub fn choose_conversation_account(twilio: &Client) {
                     let get_result = twilio.conversations().get(&conversation_sid);
 
                     if get_result.is_ok() {
+                        let conversation = get_result.unwrap();
+                        println!("Conversation found.");
+                        println!();
+
                         let conversation_action_choice = get_action_choice_from_user(
-                            vec![String::from("Delete")],
+                            vec![String::from("List Details"), String::from("Delete")],
                             "Select an action: ",
                         );
 
@@ -72,6 +76,10 @@ pub fn choose_conversation_account(twilio: &Client) {
                                 ActionChoice::Back => break,
                                 ActionChoice::Exit => process::exit(0),
                                 ActionChoice::Other(choice) => match choice.as_str() {
+                                    "List Details" => {
+                                        println!("{:#?}", conversation);
+                                        println!();
+                                    }
                                     "Delete" => {
                                         let confirm_prompt = Confirm::new(
                                         "Are you sure to wish to delete the Conversation? (Yes / No)",
@@ -407,12 +415,19 @@ pub fn choose_conversation_account(twilio: &Client) {
                     let second_confirmation = prompt_user(second_confirmation_prompt);
                     if second_confirmation.is_some() && second_confirmation.unwrap() == true {
                         println!("Proceeding with deletion. Please wait...");
-                        twilio
+                        let conversations = twilio
                             .conversations()
-                            .delete_all(None)
+                            .list(None, None, None)
                             .unwrap_or_else(|error| panic!("{}", error));
 
-                        println!("All conversations deleleted.");
+                        conversations
+                            .into_iter()
+                            .try_for_each(|conversation| -> Result<(), TwilioError> {
+                                twilio.conversations().delete(&conversation.sid)
+                            })
+                            .unwrap_or_else(|error| panic!("{}", error));
+
+                        println!("All conversations deleted.");
                         println!("");
                         return;
                     }

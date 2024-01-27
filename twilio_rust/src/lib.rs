@@ -87,6 +87,7 @@ pub struct Client {
 
 /// Crate error wrapping containing a `kind` used
 /// to differentiate errors.
+#[derive(Debug)]
 pub struct TwilioError {
     pub kind: ErrorKind,
 }
@@ -98,6 +99,7 @@ impl fmt::Display for TwilioError {
 }
 
 /// A list of possible errors from the Twilio client.
+#[derive(Debug)]
 pub enum ErrorKind {
     /// Network related error during the request.
     NetworkError(reqwest::Error),

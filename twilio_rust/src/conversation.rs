@@ -213,25 +213,4 @@ impl<'a> Conversations<'a> {
 
         conversation
     }
-
-    /// Deletes **all** conversation resources on a Twilio account.
-    pub fn delete_all(&self, state: Option<State>) -> Result<(), TwilioError> {
-        let conversations = self.list(None, None, state)?;
-
-        conversations
-            .into_iter()
-            .try_for_each(|conversation| -> Result<(), TwilioError> {
-                self.client.send_request_and_ignore_response(
-                    Method::DELETE,
-                    &format!(
-                        "https://conversations.twilio.com/v1/Conversations/{}",
-                        conversation.sid
-                    ),
-                    None,
-                )?;
-                Ok(())
-            })?;
-
-        Ok(())
-    }
 }
