@@ -66,13 +66,13 @@ impl fmt::Display for Conversation {
     AsRefStr, Clone, Display, Debug, EnumIter, EnumString, Serialize, Deserialize, PartialEq,
 )]
 pub enum State {
-    #[strum(serialize = "active")]
+    #[strum(to_string = "Active")]
     #[serde(rename = "active")]
     Active,
-    #[strum(serialize = "inactive")]
+    #[strum(to_string = "Inactive")]
     #[serde(rename = "inactive")]
     Inactive,
-    #[strum(serialize = "closed")]
+    #[strum(to_string = "Closed")]
     #[serde(rename = "closed")]
     Closed,
 }

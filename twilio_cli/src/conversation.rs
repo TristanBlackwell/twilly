@@ -228,8 +228,6 @@ pub fn choose_conversation_account(twilio: &Client) {
                                     None => break,
                                 };
 
-                                println!("Conversation: {:#?}", selected_conversation);
-
                                 match selected_conversation.state {
                                     State::Closed => loop {
                                         let conversation_action_choice =
