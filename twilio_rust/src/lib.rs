@@ -169,14 +169,15 @@ impl Client {
     ///
     /// Will return a result of either the resource type or one of the
     /// possible errors ([`Error`]).
-    fn send_request<T>(
+    fn send_request<T, U>(
         &self,
         method: Method,
         url: &str,
-        params: Option<&HashMap<String, &str>>,
+        params: Option<&U>,
     ) -> Result<T, TwilioError>
     where
         T: serde::de::DeserializeOwned,
+        U: Serialize + ?Sized,
     {
         let response = self.send_http_request(method, url, params)?;
 
@@ -208,12 +209,15 @@ impl Client {
     ///
     /// Will return a result of either the resource type or one of the
     /// possible errors ([`Error`]).
-    fn send_request_and_ignore_response(
+    fn send_request_and_ignore_response<T>(
         &self,
         method: Method,
         url: &str,
-        params: Option<&HashMap<String, &str>>,
-    ) -> Result<(), TwilioError> {
+        params: Option<&T>,
+    ) -> Result<(), TwilioError>
+    where
+        T: Serialize + ?Sized,
+    {
         let response = self.send_http_request(method, url, params)?;
 
         match response.status().is_success() {
@@ -233,13 +237,16 @@ impl Client {
         }
     }
 
-    /// Helper function for `send_request`. Not designed to be used independently.
-    fn send_http_request(
+    // Helper function for `send_request`. Not designed to be used independently.
+    fn send_http_request<T>(
         &self,
         method: Method,
         url: &str,
-        params: Option<&HashMap<String, &str>>,
-    ) -> Result<Response, TwilioError> {
+        params: Option<&T>,
+    ) -> Result<Response, TwilioError>
+    where
+        T: Serialize + ?Sized,
+    {
         match method {
             Method::GET => self
                 .client

@@ -3,7 +3,7 @@
 Contains Twilio conversations related functionality.
 
 */
-use std::{collections::HashMap, fmt};
+use std::fmt;
 
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
@@ -127,12 +127,21 @@ impl Default for Links {
     }
 }
 
+/// Possible filters when listing Conversations via the Twilio API
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "PascalCase"))]
+struct ListParams {
+    start_date: Option<String>,
+    end_date: Option<String>,
+    state: Option<State>,
+}
+
 impl<'a> Conversations<'a> {
     /// [Gets a Conversation](https://www.twilio.com/docs/conversations/api/conversation-resource#fetch-a-conversation-resource)
     ///
     /// Takes in a `sid` argument which can also be the conversations `uniqueName`.
     pub fn get(&self, sid: &str) -> Result<Conversation, TwilioError> {
-        let conversation = self.client.send_request::<Conversation>(
+        let conversation = self.client.send_request::<Conversation, ()>(
             Method::GET,
             &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
             None,
@@ -153,34 +162,21 @@ impl<'a> Conversations<'a> {
         end_date: Option<chrono::NaiveDate>,
         state: Option<State>,
     ) -> Result<Vec<Conversation>, TwilioError> {
-        let mut params: HashMap<String, &str> = HashMap::new();
-        let start_date_text = if let Some(start_date) = start_date {
-            start_date.to_string()
-        } else {
-            String::from("")
+        let params = ListParams {
+            start_date: if let Some(start_date) = start_date {
+                Some(start_date.to_string())
+            } else {
+                None
+            },
+            end_date: if let Some(end_date) = end_date {
+                Some(end_date.to_string())
+            } else {
+                None
+            },
+            state,
         };
-        if !start_date_text.is_empty() {
-            params.insert(String::from("StartDate"), &start_date_text);
-        }
-        let end_date_text = if let Some(end_date) = end_date {
-            end_date.to_string()
-        } else {
-            String::from("")
-        };
-        if !end_date_text.is_empty() {
-            params.insert(String::from("EndDate"), &end_date_text);
-        }
 
-        let state_text = if let Some(state) = state {
-            state.to_string()
-        } else {
-            String::from("")
-        };
-        if !state_text.is_empty() {
-            params.insert(String::from("State"), &state_text);
-        }
-
-        let mut conversations_page = self.client.send_request::<ConversationPage>(
+        let mut conversations_page = self.client.send_request::<ConversationPage, ListParams>(
             Method::GET,
             "https://conversations.twilio.com/v1/Conversations",
             Some(&params),
@@ -189,7 +185,7 @@ impl<'a> Conversations<'a> {
         let mut results: Vec<Conversation> = conversations_page.conversations;
 
         while (conversations_page.meta.next_page_url).is_some() {
-            conversations_page = self.client.send_request::<ConversationPage>(
+            conversations_page = self.client.send_request::<ConversationPage, ()>(
                 Method::GET,
                 &conversations_page.meta.next_page_url.unwrap(),
                 None,
@@ -205,7 +201,7 @@ impl<'a> Conversations<'a> {
     ///
     /// Takes in a `sid` argument which can also be the conversations `uniqueName` and **deletes** the resource.
     pub fn delete(&self, sid: &str) -> Result<(), TwilioError> {
-        let conversation = self.client.send_request_and_ignore_response(
+        let conversation = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,
             &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
             None,

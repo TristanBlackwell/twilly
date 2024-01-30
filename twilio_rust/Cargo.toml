@@ -1,7 +1,17 @@
 [package]
 name = "twilio_rust"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
+description = "A *synchronous* implementation of the Twilio API in Rust built upon Reqwest and Serde"
+authors = ["Tristan Blackwell"]
+repository = "https://github.com/TristanBlackwell/twilio-rust"
+homepage = "https://github.com/TristanBlackwell/twilio-rust"
+documentation = "https://docs.rs/twilio_rust"
+readme = "./README.md"
+license = "MIT"
+keywords = ["twilio", "rust", "api", "reqwest"]
+rust-version = "1.74.1"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

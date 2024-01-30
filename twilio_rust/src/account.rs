@@ -4,7 +4,7 @@ Contains Twilio account related functionality.
 
 */
 
-use std::{collections::HashMap, fmt};
+use std::fmt;
 
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
@@ -86,13 +86,28 @@ impl Status {
     }
 }
 
+/// Possible filters when listing Accounts via the Twilio API
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "PascalCase"))]
+struct ListOrUpdateParams {
+    friendly_name: Option<String>,
+    status: Option<Status>,
+}
+
+/// Possible options when creating an Account via the Twilio API
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "PascalCase"))]
+struct CreateParams {
+    friendly_name: Option<String>,
+}
+
 impl<'a> Accounts<'a> {
     /// [Gets an Account](https://www.twilio.com/docs/iam/api/account#fetch-an-account-resource)
     ///
     /// Takes in an optional `sid` argument otherwise will default to the current config
     /// account SID.
     pub fn get(&self, sid: Option<&str>) -> Result<Account, TwilioError> {
-        let account = self.client.send_request::<Account>(
+        let account = self.client.send_request::<Account, ()>(
             Method::GET,
             &format!(
                 "https://api.twilio.com/2010-04-01/Accounts/{}.json",
@@ -119,25 +134,26 @@ impl<'a> Accounts<'a> {
         friendly_name: Option<&str>,
         status: Option<&Status>,
     ) -> Result<Vec<Account>, TwilioError> {
-        let mut params: HashMap<String, &str> = HashMap::new();
-        if let Some(friendly_name) = friendly_name {
-            params.insert(String::from("FriendlyName"), friendly_name);
-        }
-
-        let status_text = if let Some(status) = status {
-            status.to_string()
-        } else {
-            String::from("")
+        let params = ListOrUpdateParams {
+            friendly_name: if let Some(friendly_name) = friendly_name {
+                Some(friendly_name.to_string())
+            } else {
+                None
+            },
+            status: if let Some(status) = status {
+                Some(status.clone())
+            } else {
+                None
+            },
         };
-        if !status_text.is_empty() {
-            params.insert(String::from("Status"), &status_text);
-        }
 
-        let mut accounts_page = self.client.send_request::<AccountPage>(
-            Method::GET,
-            "https://api.twilio.com/2010-04-01/Accounts.json?PageSize=5",
-            Some(&params),
-        )?;
+        let mut accounts_page = self
+            .client
+            .send_request::<AccountPage, ListOrUpdateParams>(
+                Method::GET,
+                "https://api.twilio.com/2010-04-01/Accounts.json?PageSize=5",
+                Some(&params),
+            )?;
 
         let mut results: Vec<Account> = accounts_page.accounts;
 
@@ -148,7 +164,7 @@ impl<'a> Accounts<'a> {
             );
             accounts_page =
                 self.client
-                    .send_request::<AccountPage>(Method::GET, &full_url, None)?;
+                    .send_request::<AccountPage, ()>(Method::GET, &full_url, None)?;
 
             results.append(&mut accounts_page.accounts);
         }
@@ -165,12 +181,15 @@ impl<'a> Accounts<'a> {
     /// - Trial accounts can only have a single sub-account beneath it.
     /// See documentation for detail.
     pub fn create(&self, friendly_name: Option<&str>) -> Result<Account, TwilioError> {
-        let mut params: HashMap<String, &str> = HashMap::new();
-        if let Some(friendly_name) = friendly_name {
-            params.insert(String::from("FriendlyName"), friendly_name);
-        }
+        let params = CreateParams {
+            friendly_name: if let Some(friendly_name) = friendly_name {
+                Some(friendly_name.to_string())
+            } else {
+                None
+            },
+        };
 
-        self.client.send_request::<Account>(
+        self.client.send_request::<Account, CreateParams>(
             Method::POST,
             "https://api.twilio.com/2010-04-01/Accounts.json",
             Some(&params),
@@ -188,25 +207,26 @@ impl<'a> Accounts<'a> {
         friendly_name: Option<&str>,
         status: Option<&Status>,
     ) -> Result<Account, TwilioError> {
-        let mut params: HashMap<String, &str> = HashMap::new();
-        if let Some(friendly_name) = friendly_name {
-            params.insert(String::from("FriendlyName"), friendly_name);
-        }
-        let status_text = if let Some(status) = status {
-            status.to_string()
-        } else {
-            String::from("")
+        let opts = ListOrUpdateParams {
+            friendly_name: if let Some(friendly_name) = friendly_name {
+                Some(friendly_name.to_string())
+            } else {
+                None
+            },
+            status: if let Some(status) = status {
+                Some(status.clone())
+            } else {
+                None
+            },
         };
-        if !status_text.is_empty() {
-            params.insert(String::from("Status"), &status_text);
-        }
-        self.client.send_request::<Account>(
+
+        self.client.send_request::<Account, ListOrUpdateParams>(
             Method::POST,
             &format!(
                 "https://api.twilio.com/2010-04-01/Accounts/{}.json",
                 account_sid
             ),
-            Some(&params),
+            Some(&opts),
         )
     }
 }
