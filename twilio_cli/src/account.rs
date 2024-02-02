@@ -14,11 +14,11 @@ use twilio_rust::{
 
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum Action {
-    #[strum(serialize = "Get account")]
+    #[strum(to_string = "Get account")]
     GetAccount,
-    #[strum(serialize = "List accounts")]
+    #[strum(to_string = "List accounts")]
     ListAccounts,
-    #[strum(serialize = "Create account")]
+    #[strum(to_string = "Create account")]
     CreateAccount,
     Back,
     Exit,

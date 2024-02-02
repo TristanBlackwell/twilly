@@ -35,7 +35,7 @@ twilio.conversations().delete(&conversation_sid);
 pub mod account;
 pub mod conversation;
 
-use std::{collections::HashMap, fmt};
+use std::{fmt};
 
 use account::Accounts;
 use conversation::Conversations;

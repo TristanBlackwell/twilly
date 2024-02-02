@@ -9,19 +9,19 @@ use twilio_cli::{
     ActionChoice, FilterChoice,
 };
 use twilio_rust::{
-    conversation::{Conversation, State},
+    conversation::{Conversation, State, UpdateConversation},
     Client, ErrorKind, TwilioError,
 };
 
 #[derive(Clone, Display, EnumIter, EnumString)]
 pub enum Action {
-    #[strum(serialize = "Get conversation")]
+    #[strum(to_string = "Get conversation")]
     GetConversation,
-    #[strum(serialize = "List Conversations")]
+    #[strum(to_string = "List Conversations")]
     ListConversations,
-    #[strum(serialize = "Delete Conversation")]
+    #[strum(to_string = "Delete Conversation")]
     DeleteConversation,
-    #[strum(serialize = "Delete all Conversations")]
+    #[strum(to_string = "Delete all Conversations")]
     DeleteAllConversations,
     Back,
     Exit,
@@ -186,7 +186,7 @@ pub fn choose_conversation_account(twilio: &Client) {
                         };
 
                         println!("Fetching conversations...");
-                        let conversations = twilio
+                        let mut conversations = twilio
                             .conversations()
                             .list(start_date, end_date, state)
                             .unwrap_or_else(|error| panic!("{}", error));
@@ -196,36 +196,45 @@ pub fn choose_conversation_account(twilio: &Client) {
                             println!();
                         } else {
                             println!("Found {} conversations.", conversations.len());
-                            let mut modifiable_conversations = conversations.clone();
 
+                            let mut selected_conversation_index: Option<usize> = None;
                             loop {
-                                let conversation_action_choice = get_action_choice_from_user(
-                                    modifiable_conversations
-                                        .iter()
-                                        .map(|conv| {
-                                            let display_name = match &conv.unique_name {
-                                                Some(unique_name) => format!(
-                                                    "({}) {} - {}",
-                                                    conv.sid, unique_name, conv.state
-                                                ),
-                                                None => format!("{} - {}", conv.sid, conv.state),
-                                            };
-                                            display_name
-                                        })
-                                        .collect::<Vec<String>>(),
-                                    "Conversations: ",
-                                );
-
-                                let selected_conversation = match conversation_action_choice {
-                                    Some(conversation_action) => match conversation_action {
-                                        ActionChoice::Back => break,
-                                        ActionChoice::Exit => process::exit(0),
-                                        ActionChoice::Other(choice) => conversations
+                                let selected_conversation = if let Some(index) =
+                                    selected_conversation_index
+                                {
+                                    &conversations[index]
+                                } else {
+                                    let conversation_action_choice = get_action_choice_from_user(
+                                        conversations
                                             .iter()
-                                            .find(|conv| conv.sid == choice[..34])
-                                            .unwrap(),
-                                    },
-                                    None => break,
+                                            .map(|conv| {
+                                                let display_name = match &conv.unique_name {
+                                                    Some(unique_name) => format!(
+                                                        "({}) {} - {}",
+                                                        conv.sid, unique_name, conv.state
+                                                    ),
+                                                    None => {
+                                                        format!("{} - {}", conv.sid, conv.state)
+                                                    }
+                                                };
+                                                display_name
+                                            })
+                                            .collect::<Vec<String>>(),
+                                        "Conversations: ",
+                                    );
+                                    let conversation_index = match conversation_action_choice {
+                                        Some(conversation_action) => match conversation_action {
+                                            ActionChoice::Back => break,
+                                            ActionChoice::Exit => process::exit(0),
+                                            ActionChoice::Other(choice) => conversations
+                                                .iter()
+                                                .position(|conv| conv.sid == choice[..34])
+                                                .unwrap(),
+                                        },
+                                        None => break,
+                                    };
+
+                                    &conversations[conversation_index]
                                 };
 
                                 match selected_conversation.state {
@@ -257,8 +266,7 @@ pub fn choose_conversation_account(twilio: &Client) {
                                                                 delete_conversation(
                                                                     twilio,
                                                                     &selected_conversation.sid,
-                                                                    Some(&mut modifiable_conversations),
-
+                                                                    Some(&mut conversations),
                                                                 );
                                                                 break;
                                                             }
@@ -301,13 +309,25 @@ pub fn choose_conversation_account(twilio: &Client) {
                                                                 println!();
                                                             }
                                                             "Re-activate" => {
-                                                                println!("TODO: re-activate conversation")
+                                                                update_conversation(
+                                                                    twilio,
+                                                                    &selected_conversation.sid,
+                                                                    UpdateConversation {
+                                                                        state: Some(State::Active),
+                                                                        friendly_name: None,
+                                                                        unique_name: None,
+                                                                        attributes: None,
+                                                                        timers: None,
+                                                                    },
+                                                                    &mut conversations,
+                                                                );
+                                                                break;
                                                             }
                                                             "Delete" => {
                                                                 delete_conversation(
                                                                     twilio,
                                                                     &selected_conversation.sid,
-                                                                    Some(&mut modifiable_conversations),
+                                                                    Some(&mut conversations),
                                                                 );
                                                                 break;
                                                             }
@@ -350,13 +370,27 @@ pub fn choose_conversation_account(twilio: &Client) {
                                                                 println!();
                                                             }
                                                             "De-activate" => {
-                                                                println!("TODO: de-activate conversation")
+                                                                update_conversation(
+                                                                    twilio,
+                                                                    &selected_conversation.sid,
+                                                                    UpdateConversation {
+                                                                        state: Some(
+                                                                            State::Inactive,
+                                                                        ),
+                                                                        friendly_name: None,
+                                                                        unique_name: None,
+                                                                        attributes: None,
+                                                                        timers: None,
+                                                                    },
+                                                                    &mut conversations,
+                                                                );
+                                                                break;
                                                             }
                                                             "Delete" => {
                                                                 delete_conversation(
                                                                     twilio,
                                                                     &selected_conversation.sid,
-                                                                    Some(&mut modifiable_conversations),
+                                                                    Some(&mut conversations),
                                                                 );
                                                                 break;
                                                             }
@@ -442,35 +476,49 @@ pub fn choose_conversation_account(twilio: &Client) {
 
 /// Prompts the user for confirmation before deleting the conversation with
 /// the SID provided. Will panic if the delete operation fails.
-fn delete_conversation(
+fn update_conversation(
     twilio: &Client,
-    conversation_sid: &str,
-    conversations: Option<&mut Vec<Conversation>>,
+    sid: &str,
+    updates: UpdateConversation,
+    conversations: &mut Vec<Conversation>,
 ) {
+    let update_result = twilio.conversations().update(sid, updates);
+
+    if update_result.is_ok() {
+        println!("Conversation updated.");
+        println!();
+
+        if let Some(index) = conversations.iter().position(|x| x.sid == *sid) {
+            conversations[index] = update_result.unwrap();
+        } else {
+            let delete_error = update_result.unwrap_err();
+            panic!("{}", delete_error);
+        }
+    }
+}
+
+/// Prompts the user for confirmation before deleting the conversation with
+/// the SID provided. Will panic if the delete operation fails.
+fn delete_conversation(twilio: &Client, sid: &str, conversations: Option<&mut Vec<Conversation>>) {
     let confirmation_prompt =
         Confirm::new("Are you sure to wish to delete the Conversation? (Yes / No)");
     let confirmation = prompt_user(confirmation_prompt);
     if confirmation.is_some() && confirmation.unwrap() == true {
-        let delete_result = twilio.conversations().delete(&conversation_sid);
+        let delete_result = twilio.conversations().delete(&sid);
 
         if delete_result.is_ok() {
             println!("Conversation deleted.");
             println!("");
 
             if conversations.is_some() {
-                conversations
-                    .unwrap()
-                    .retain(|conv| conv.sid != conversation_sid);
+                conversations.unwrap().retain(|conv| conv.sid != sid);
             }
         } else {
             let delete_error = delete_result.unwrap_err();
             match delete_error.kind {
                 ErrorKind::TwilioError(twilio_error) => {
                     if twilio_error.status == 404 {
-                        println!(
-                            "A Conversation with SID '{}' was not found.",
-                            &conversation_sid
-                        );
+                        println!("A Conversation with SID '{}' was not found.", &sid);
                         println!("");
                     } else {
                         panic!("{}", twilio_error)

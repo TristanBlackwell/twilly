@@ -61,19 +61,28 @@ impl fmt::Display for Conversation {
     }
 }
 
+/// Details related to a specific conversation.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all(serialize = "PascalCase"))]
+pub struct UpdateConversation {
+    pub unique_name: Option<String>,
+    pub friendly_name: Option<String>,
+    pub state: Option<State>,
+    pub attributes: Option<String>,
+    pub timers: Option<Timers>,
+}
+
 /// The possible states of a conversation.
 #[derive(
     AsRefStr, Clone, Display, Debug, EnumIter, EnumString, Serialize, Deserialize, PartialEq,
 )]
+#[serde(rename_all = "lowercase")]
 pub enum State {
     #[strum(to_string = "Active")]
-    #[serde(rename = "active")]
     Active,
     #[strum(to_string = "Inactive")]
-    #[serde(rename = "inactive")]
     Inactive,
     #[strum(to_string = "Closed")]
-    #[serde(rename = "closed")]
     Closed,
 }
 
@@ -86,9 +95,9 @@ impl Default for State {
 impl State {
     pub fn as_str(&self) -> &'static str {
         match self {
-            &State::Active => "Active",
-            &State::Inactive => "Inactive",
-            &State::Closed => "Closed",
+            &State::Active => "active",
+            &State::Inactive => "inactive",
+            &State::Closed => "closed",
         }
     }
 }
@@ -96,7 +105,9 @@ impl State {
 /// The timers configured for a conversation.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Timers {
+    #[serde(rename(serialize = "Timers.Inactive"))]
     pub date_inactive: Option<String>,
+    #[serde(rename(serialize = "Timers.Closed"))]
     pub date_closed: Option<String>,
 }
 
@@ -195,6 +206,26 @@ impl<'a> Conversations<'a> {
         }
 
         Ok(results)
+    }
+
+    /// [Update a Conversation](https://www.twilio.com/docs/conversations/api/conversation-resource#update-conversation)
+    ///
+    /// Takes in a `sid` argument which can also be the conversations `uniqueName` and updates the resource with the
+    /// provided properties.
+    pub fn update(
+        &self,
+        sid: &str,
+        updates: UpdateConversation,
+    ) -> Result<Conversation, TwilioError> {
+        let conversation = self
+            .client
+            .send_request::<Conversation, UpdateConversation>(
+                Method::POST,
+                &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
+                Some(&updates),
+            );
+
+        conversation
     }
 
     /// [Deletes a Conversation](https://www.twilio.com/docs/conversations/api/conversation-resource#delete-a-conversation-resource)

@@ -58,15 +58,13 @@ impl fmt::Display for Account {
 #[derive(
     AsRefStr, Clone, Display, Debug, EnumIter, EnumString, Serialize, Deserialize, PartialEq,
 )]
+#[serde(rename_all = "lowercase")]
 pub enum Status {
     #[strum(to_string = "Active")]
-    #[serde(rename = "active")]
     Active,
     #[strum(to_string = "Suspended")]
-    #[serde(rename = "suspended")]
     Suspended,
     #[strum(to_string = "Closed")]
-    #[serde(rename = "closed")]
     Closed,
 }
 
