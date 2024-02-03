@@ -127,7 +127,6 @@ pub fn choose_account_action(twilio: &Client) {
                                     ) {
                                         match action_choice {
                                             ActionChoice::Back => {
-                                                selected_account_index = None;
                                                 break;
                                             }
                                             ActionChoice::Exit => process::exit(0),

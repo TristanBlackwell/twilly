@@ -55,13 +55,11 @@ pub fn choose_conversation_action(twilio: &Client) {
                                 println!("Conversation found.");
                                 println!();
 
-                                let conversation_action_choice = get_action_choice_from_user(
+                                if let Some(action_choice) = get_action_choice_from_user(
                                     vec![String::from("List Details"), String::from("Delete")],
                                     "Select an action: ",
-                                );
-
-                                match conversation_action_choice {
-                                    Some(conversation_action) => match conversation_action {
+                                ) {
+                                    match action_choice {
                                         ActionChoice::Back => break,
                                         ActionChoice::Exit => process::exit(0),
                                         ActionChoice::Other(choice) => match choice.as_str() {
@@ -90,8 +88,9 @@ pub fn choose_conversation_action(twilio: &Client) {
                                             }
                                             _ => println!("Unknown action '{}'", choice),
                                         },
-                                    },
-                                    None => break,
+                                    }
+                                } else {
+                                    break;
                                 }
                             }
                             Err(error) => match error.kind {
@@ -226,7 +225,6 @@ pub fn choose_conversation_action(twilio: &Client) {
                                         ) {
                                             match action_choice {
                                                 ActionChoice::Back => {
-                                                    selected_conversation_index = None;
                                                     break;
                                                 }
                                                 ActionChoice::Exit => process::exit(0),
@@ -291,6 +289,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                     },
                                                 }
                                             } else {
+                                                selected_conversation_index = None;
                                                 break;
                                             }
                                         },
@@ -358,6 +357,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                     },
                                                 }
                                             } else {
+                                                selected_conversation_index = None;
                                                 break;
                                             }
                                         },
