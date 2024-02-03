@@ -81,7 +81,7 @@ fn main() {
         match sub_resource {
             twilio_rust::SubResource::Account => account::choose_account_action(&twilio),
             twilio_rust::SubResource::Conversations => {
-                conversation::choose_conversation_account(&twilio)
+                conversation::choose_conversation_action(&twilio)
             }
         }
     }
