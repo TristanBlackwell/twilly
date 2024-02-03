@@ -1,4 +1,4 @@
-use std::{mem, process, str::FromStr};
+use std::{process, str::FromStr};
 
 use chrono::Datelike;
 use inquire::{validator::Validation, Confirm, DateSelect, Select, Text};
@@ -236,6 +236,8 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                         .position(|conv| conv.sid == choice[..34])
                                                         .expect("Could not find conversation in existing conversation list");
 
+                                                    selected_conversation_index =
+                                                        Some(conversation_position);
                                                     &mut conversations[conversation_position]
                                                 }
                                             }
@@ -278,7 +280,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                             );
                                                             conversations.remove(
                                                                 selected_conversation_index
-                                                                    .unwrap(),
+                                                                    .expect("Could not find conversation in existing conversation list"),
                                                             );
                                                             selected_conversation_index = None;
                                                             break;
@@ -334,7 +336,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                                 );
                                                             conversations
                                                                 [selected_conversation_index
-                                                                    .unwrap()] =
+                                                                    .expect("Could not find conversation in existing conversation list")] =
                                                                 updated_conversation;
                                                             break;
                                                         }
@@ -345,7 +347,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                             );
                                                             conversations.remove(
                                                                 selected_conversation_index
-                                                                    .unwrap(),
+                                                                    .expect("Could not find conversation in existing conversation list"),
                                                             );
                                                             selected_conversation_index = None;
                                                             break;
@@ -403,7 +405,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                                 );
                                                             conversations
                                                                 [selected_conversation_index
-                                                                    .unwrap()] =
+                                                                    .expect("Could not find conversation in existing conversation list")] =
                                                                 updated_conversation;
                                                             break;
                                                         }
@@ -414,7 +416,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                             );
                                                             conversations.remove(
                                                                 selected_conversation_index
-                                                                    .unwrap(),
+                                                                    .expect("Could not find conversation in existing conversation list"),
                                                             );
                                                             selected_conversation_index = None;
                                                             break;
