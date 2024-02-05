@@ -1,0 +1,24 @@
+[package]
+name = "twilly"
+version = "0.0.2"
+edition = "2021"
+description = "A *synchronous* implementation of the Twilio API in Rust built upon Reqwest and Serde"
+authors = ["Tristan Blackwell"]
+repository = "https://github.com/TristanBlackwell/twilly"
+homepage = "https://github.com/TristanBlackwell/twilly"
+documentation = "https://docs.rs/twilly"
+readme = "README.md"
+license = "MIT"
+keywords = ["twilly", "twilio", "rust", "api", "reqwest"]
+rust-version = "1.74.1"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.31"
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.2"
+strum = "0.25.0"
+strum_macros = "0.25"
