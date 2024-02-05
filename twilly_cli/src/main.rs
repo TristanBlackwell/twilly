@@ -52,7 +52,7 @@ fn main() {
             account.friendly_name, account.type_field, account.status
         );
 
-        confy::store("twilio_cli", "profile", &config)
+        confy::store("twilly", "profile", &config)
             .unwrap_or_else(|err| eprintln!("Unable to store profile configuration: {}", err));
     }
 

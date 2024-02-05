@@ -7,6 +7,7 @@ authors = ["Tristan Blackwell"]
 repository = "https://github.com/TristanBlackwell/twilly"
 homepage = "https://github.com/TristanBlackwell/twilly"
 documentation = "https://docs.rs/twilly"
+readme = "README.md"
 license = "MIT"
 keywords = ["twilly", "twilio", "rust", "api", "reqwest"]
 rust-version = "1.74.1"
