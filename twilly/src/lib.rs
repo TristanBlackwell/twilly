@@ -6,7 +6,7 @@ Coverage is partial yet provides an idiomatic usage pattern currently covering:
 - Accounts
 - Conversations
 
-This crate has been developed alongside the `twilio-cli` crate which provides an
+This crate has been developed alongside the `twilly-cli` crate which provides an
 enhanced Twilio CLI experience.
 
 # Example
@@ -15,7 +15,7 @@ Interaction is done via a Twilio client that can be created via a constructor. T
 parameter is a `TwilioConfig` struct of an account SID & auth token pair.
 
 ```
-let twilio = twilio_rust::Client::new(&config);
+let twilio = twilly::Client::new(&config);
 ```
 
 To retrieve accounts from the client:
@@ -35,7 +35,7 @@ twilio.conversations().delete(&conversation_sid);
 pub mod account;
 pub mod conversation;
 
-use std::{fmt};
+use std::fmt;
 
 use account::Accounts;
 use conversation::Conversations;

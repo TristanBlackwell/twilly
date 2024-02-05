@@ -5,15 +5,15 @@ use std::{process, str::FromStr};
 
 use inquire::{Confirm, Select};
 use strum::IntoEnumIterator;
-use twilio_cli::{prompt_user_selection, request_credentials};
-use twilio_rust::{self, SubResource, TwilioConfig};
+use twilly::{self, SubResource, TwilioConfig};
+use twilly_cli::{prompt_user_selection, request_credentials};
 
 fn main() {
     print_welcome_message();
 
     let mut loaded_config = false;
     let mut config =
-        confy::load::<TwilioConfig>("twilio_cli", "profile").unwrap_or_else(|err| match err {
+        confy::load::<TwilioConfig>("twilly", "profile").unwrap_or_else(|err| match err {
             _ => {
                 eprintln!("Unable to load profile configuration: {}", err);
                 TwilioConfig {
@@ -38,7 +38,7 @@ fn main() {
         }
     }
 
-    let twilio = twilio_rust::Client::new(&config);
+    let twilio = twilly::Client::new(&config);
 
     if !loaded_config {
         println!("Checking account...");
@@ -79,10 +79,8 @@ fn main() {
         let sub_resource = SubResource::from_str(&sub_resource).unwrap();
 
         match sub_resource {
-            twilio_rust::SubResource::Account => account::choose_account_action(&twilio),
-            twilio_rust::SubResource::Conversations => {
-                conversation::choose_conversation_action(&twilio)
-            }
+            twilly::SubResource::Account => account::choose_account_action(&twilio),
+            twilly::SubResource::Conversations => conversation::choose_conversation_action(&twilio),
         }
     }
 }
@@ -100,6 +98,6 @@ fn print_welcome_message() {
                          |_____|                   "
     );
     println!("");
-    println!("Welcome to Twilio Rust! I'm here to help you interact with Twilio!");
+    println!("Welcome to Twilly! I'm here to help you interact with Twilio!");
     println!("");
 }

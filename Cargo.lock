@@ -1200,19 +1200,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
-name = "twilio_cli"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "confy",
- "inquire",
- "strum",
- "strum_macros",
- "twilio_rust",
-]
-
-[[package]]
-name = "twilio_rust"
+name = "twilly"
 version = "0.0.1"
 dependencies = [
  "chrono",
@@ -1221,6 +1209,18 @@ dependencies = [
  "serde_json",
  "strum",
  "strum_macros",
+]
+
+[[package]]
+name = "twilly_cli"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "confy",
+ "inquire",
+ "strum",
+ "strum_macros",
+ "twilly",
 ]
 
 [[package]]

@@ -3,11 +3,11 @@ use std::{process, str::FromStr};
 use inquire::{validator::Validation, Confirm, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
-use twilio_cli::{
+use twilly::{account::Status, Client};
+use twilly_cli::{
     get_action_choice_from_user, get_filter_choice_from_user, prompt_user, prompt_user_selection,
     ActionChoice, FilterChoice,
 };
-use twilio_rust::{account::Status, Client};
 
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum Action {

@@ -4,13 +4,13 @@ use chrono::Datelike;
 use inquire::{validator::Validation, Confirm, DateSelect, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
-use twilio_cli::{
-    get_action_choice_from_user, get_filter_choice_from_user, prompt_user, prompt_user_selection,
-    ActionChoice, FilterChoice,
-};
-use twilio_rust::{
+use twilly::{
     conversation::{Conversation, State, UpdateConversation},
     Client, ErrorKind, TwilioError,
+};
+use twilly_cli::{
+    get_action_choice_from_user, get_filter_choice_from_user, prompt_user, prompt_user_selection,
+    ActionChoice, FilterChoice,
 };
 
 #[derive(Clone, Display, EnumIter, EnumString)]

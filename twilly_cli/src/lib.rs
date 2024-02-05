@@ -1,4 +1,4 @@
-/*! This crate is a CLI tool for interacting the Twilio API.
+/*! Twilly_cli is a CLI tool for interacting the Twilio API.
 
 Coverage is partial yet offers a user-friendly way to interact
 with Twilio via the terminal. The CLI currently covers:
@@ -6,7 +6,7 @@ with Twilio via the terminal. The CLI currently covers:
 - Accounts
 - Conversations
 
-This crate has been developed alongside the `twilio-rust` crate which backs
+This crate has been developed alongside the `twilly` crate which backs
 the functionality of the crate.
 
 # Features
@@ -23,7 +23,7 @@ use inquire::{
     validator::Validation, Confirm, DateSelect, InquireError, Password, PasswordDisplayMode,
     Select, Text,
 };
-use twilio_rust::TwilioConfig;
+use twilly::TwilioConfig;
 
 /// Requests Twilio Account SID and auth token pair from the user and returns
 /// it as a `TwilioConfig` struct.
