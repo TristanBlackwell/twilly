@@ -31,4 +31,4 @@ Under the hood this uses `twilly`, hence the co-location of these libraries.
 
 ### Demo
 
-![twilly_cli being used to load an active profile, view stored conversations, and delete a closed conversation on the account with a confirmation prompt](./assets/delete-conversation)
+![twilly_cli being used to load an active profile, view stored conversations, and delete a closed conversation on the account with a confirmation prompt](./assets/delete-conversation.gif)
