@@ -34,14 +34,16 @@ twilio.conversations().delete(&conversation_sid);
 
 pub mod account;
 pub mod conversation;
+pub mod sync;
 
-use std::fmt;
+use std::fmt::{self};
 
 use account::Accounts;
 use conversation::Conversations;
 use reqwest::{blocking::Response, Method};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
+use sync::Sync;
 
 /// Account SID & auth token pair required for
 /// authenticating requests to Twilio.
@@ -101,6 +103,8 @@ impl fmt::Display for TwilioError {
 /// A list of possible errors from the Twilio client.
 #[derive(Debug)]
 pub enum ErrorKind {
+    /// Validation error related to incoming arguments.
+    ValidationError(String),
     /// Network related error during the request.
     NetworkError(reqwest::Error),
     /// Twilio returned error
@@ -112,6 +116,9 @@ pub enum ErrorKind {
 impl ErrorKind {
     fn as_str(&self) -> String {
         match self {
+            ErrorKind::ValidationError(error) => {
+                format!("Validation error for provided arguments: {}", error)
+            }
             ErrorKind::NetworkError(error) => format!("Network error reaching Twilio: {}", &error),
             ErrorKind::ParsingError(error) => format!("Unable to parse response: {}", &error),
             ErrorKind::TwilioError(error) => {
@@ -274,6 +281,11 @@ impl Client {
     /// Conversation related functions.
     pub fn conversations<'a>(&'a self) -> Conversations {
         Conversations { client: self }
+    }
+
+    /// Sync related functions.
+    pub fn sync<'a>(&'a self) -> Sync {
+        Sync { client: self }
     }
 }
 
