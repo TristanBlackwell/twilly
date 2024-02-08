@@ -1,45 +1,27 @@
 /*!
 
-Contains Twilio Sync related functionality.
+Contains Twilio Sync Document related functionality.
 
 */
 
-use crate::{Client, TwilioError};
+use crate::{Client, PageMeta, TwilioError};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-
-/// Holds Sync related functions accessible
-/// on the client.
-pub struct Documents<'a> {
-    pub client: &'a Client,
-}
 
 /// Represents a page of Sync Services from the Twilio API.
 #[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct DocumentPage {
-    documents: Vec<Document>,
-    meta: DocumentPageMeta,
-}
-
-/// Holds the actual page information from the API.
-#[allow(dead_code)]
-#[derive(Deserialize)]
-pub struct DocumentPageMeta {
-    page: u16,
-    page_size: u16,
-    first_page_url: String,
-    previous_page_url: Option<String>,
-    next_page_url: Option<String>,
-    key: String,
+    documents: Vec<SyncDocument>,
+    meta: PageMeta,
 }
 
 /// A Sync Service resource.
 #[derive(Serialize, Deserialize)]
-pub struct Document {
+pub struct SyncDocument {
     pub sid: String,
-    pub unique_name: String,
+    pub unique_name: Option<String>,
     pub account_sid: String,
     pub service_sid: String,
     pub url: String,
@@ -57,19 +39,13 @@ pub struct Document {
 /// Links to resources _linked_ to a conversation
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Links {
-    pub documents: String,
-    pub lists: String,
-    pub maps: String,
-    pub streams: String,
+    pub permissions: String,
 }
 
 impl Default for Links {
     fn default() -> Self {
         Links {
-            documents: String::from(""),
-            lists: String::from(""),
-            maps: String::from(""),
-            streams: String::from(""),
+            permissions: String::from(""),
         }
     }
 }
@@ -78,118 +54,118 @@ impl Default for Links {
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct CreateOrUpdateParams {
-    friendly_name: Option<String>,
-    webhook_url: Option<String>,
-    reachability_webhooks_enabled: Option<bool>,
-    acl_enabled: Option<bool>,
-    reachability_debouncing_enabled: Option<bool>,
-    reachability_debouncing_window: Option<u16>,
-    webhooks_from_rest_enabled: Option<bool>,
+pub struct CreateParams {
+    unique_name: Option<String>,
+    data: String,
+    /// How long the Document should exist before deletion (in seconds).
+    ttl: Option<bool>,
 }
 
-pub struct Services<'a> {
+/// Arguments for creating or updating a Sync Service
+#[skip_serializing_none]
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "PascalCase"))]
+pub struct UpdateParams {
+    #[serde(rename(serialize = "If-Match"))]
+    if_match: Option<String>,
+    data: String,
+    /// How long the Document should exist before deletion (in seconds).
+    ttl: Option<bool>,
+}
+
+pub struct Documents<'a> {
     pub client: &'a Client,
+    pub service_sid: String,
 }
 
-impl<'a> Services<'a> {
-    /// [Creates a Sync Service](https://www.twilio.com/docs/sync/api/service#create-a-service-resource)
+impl<'a> Documents<'a> {
+    /// [Creates a Sync Document](https://www.twilio.com/docs/sync/api/document-resource)
     ///
-    /// Takes in an `sid` argument of the Sync Service to fetch. Can also be the unique name
-    pub fn create(&self, params: CreateOrUpdateParams) -> Result<Document, TwilioError> {
-        if let Some(reachability_debouncing_window) = params.reachability_debouncing_window {
-            let validation =
-                validate_reachability_debouncing_window(reachability_debouncing_window);
-
-            if validation.is_err() {
-                return Err(validation.unwrap_err());
-            }
-        }
-
-        let service = self.client.send_request::<Document, CreateOrUpdateParams>(
-            Method::GET,
-            "https://sync.twilio.com/v1/Services",
+    /// Creates a Sync Document with the provided parameters.
+    pub fn create(&self, params: CreateParams) -> Result<SyncDocument, TwilioError> {
+        let document = self.client.send_request::<SyncDocument, CreateParams>(
+            Method::POST,
+            &format!(
+                "https://sync.twilio.com/v1/Services/{}/Documents",
+                self.service_sid
+            ),
             Some(&params),
         );
 
-        service
+        document
     }
 
-    /// [Lists Sync Services](https://www.twilio.com/docs/sync/api/service#read-multiple-service-resources)
+    /// [Lists Sync Documents](https://www.twilio.com/docs/sync/api/document-resource#read-multiple-document-resources)
     ///
-    /// This will list Sync Services existing on the Twilio account.
+    /// This will list Sync Documents In the targeted Service.
     ///
-    /// Services will be _eagerly_ paged until all retrieved.
-    ///
-    /// Takes optional parameters:
-    /// - `friendly_name` - Return only accounts matching this friendly name
-    /// - `status` - Return only accounts that match this status
-    pub fn list(&self) -> Result<Vec<Document>, TwilioError> {
-        let mut services_page = self.client.send_request::<DocumentPage, ()>(
+    /// Documents will be _eagerly_ paged until all retrieved.
+    pub fn list(&self) -> Result<Vec<SyncDocument>, TwilioError> {
+        let mut documents_page = self.client.send_request::<DocumentPage, ()>(
             Method::GET,
-            "https://sync.twilio.com/v1/Services?PageSize=20",
+            &format!(
+                "https://sync.twilio.com/v1/Services/{}/Documents?PageSize=50",
+                self.service_sid
+            ),
             None,
         )?;
 
-        let mut results: Vec<Document> = services_page.services;
+        let mut results: Vec<SyncDocument> = documents_page.documents;
 
-        while (services_page.meta.next_page_url).is_some() {
-            services_page = self.client.send_request::<DocumentPage, ()>(
+        while (documents_page.meta.next_page_url).is_some() {
+            documents_page = self.client.send_request::<DocumentPage, ()>(
                 Method::GET,
-                &services_page.meta.next_page_url.unwrap(),
+                &documents_page.meta.next_page_url.unwrap(),
                 None,
             )?;
 
-            results.append(&mut services_page.services);
+            results.append(&mut documents_page.documents);
         }
 
         Ok(results)
     }
 }
 
-pub struct Service<'a> {
+pub struct Document<'a> {
     pub client: &'a Client,
+    pub service_sid: String,
+    /// SID of the Sync Document
     pub sid: String,
 }
 
-impl<'a> Service<'a> {
-    /// [Gets a Sync Service](https://www.twilio.com/docs/sync/api/service#fetch-a-service-resource)
+impl<'a> Document<'a> {
+    /// [Gets a Sync Document](https://www.twilio.com/docs/sync/api/document-resource#fetch-a-document-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and fetches the resource
-    pub fn get(&self) -> Result<Document, TwilioError> {
-        let service = self.client.send_request::<Document, ()>(
+    /// Targets the Sync Service provided to the `Service` argument and fetches the Document
+    /// provided
+    pub fn get(&self) -> Result<SyncDocument, TwilioError> {
+        let document = self.client.send_request::<SyncDocument, ()>(
             Method::GET,
-            &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
+            &format!(
+                "https://sync.twilio.com/v1/Services/{}/Documents/{}",
+                self.service_sid, self.sid
+            ),
             None,
         );
 
-        service
+        document
     }
 
-    /// [Update a Sync Service](https://www.twilio.com/docs/sync/api/service#update-a-service-resource)
+    /// [Update a Sync Document](https://www.twilio.com/docs/sync/api/document-resource#update-a-document-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and updates the resource with
-    /// the provided properties
-    pub fn update(&self, params: CreateOrUpdateParams) -> Result<Document, TwilioError> {
-        if let Some(reachability_debouncing_window) = params.reachability_debouncing_window {
-            let validation =
-                validate_reachability_debouncing_window(reachability_debouncing_window);
-
-            if validation.is_err() {
-                return Err(validation.unwrap_err());
-            }
-        }
-
-        let service = self.client.send_request::<Document, CreateOrUpdateParams>(
+    /// Targets the Sync Service provided to the `Service` argument and updates the targeted
+    /// Document
+    pub fn update(&self, params: UpdateParams) -> Result<SyncDocument, TwilioError> {
+        let document = self.client.send_request::<SyncDocument, UpdateParams>(
             Method::POST,
             &format!(
-                "https://conversations.twilio.com/v1/Conversations/{}",
-                self.sid
+                "https://sync.twilio.com/v1/Services/{}/Documents/{}",
+                self.service_sid, self.sid
             ),
             Some(&params),
         );
 
-        service
+        document
     }
 
     /// [Deletes a Sync Service](https://www.twilio.com/docs/sync/api/service#delete-a-service-resourcee)
@@ -198,32 +174,13 @@ impl<'a> Service<'a> {
     pub fn delete(&self) -> Result<(), TwilioError> {
         let service = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,
-            &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
+            &format!(
+                "https://sync.twilio.com/v1/Services/{}/Documents/{}",
+                self.service_sid, self.sid
+            ),
             None,
         );
 
         service
     }
-}
-
-/// Validates that the provided `reachability_debouncing_window` is between it's
-/// expected millisecond values.
-fn validate_reachability_debouncing_window(
-    reachability_debouncing_window: u16,
-) -> Result<(), TwilioError> {
-    if reachability_debouncing_window < 1000 {
-        return Err(TwilioError {
-            kind: crate::ErrorKind::ValidationError(String::from(
-                "Reachability debouncing window must be greater than 1000 milliseconds",
-            )),
-        });
-    } else if reachability_debouncing_window > 30000 {
-        return Err(TwilioError {
-            kind: crate::ErrorKind::ValidationError(String::from(
-                "Reachability debouncing window must be less than 30,000 milliseconds",
-            )),
-        });
-    }
-
-    Ok(())
 }

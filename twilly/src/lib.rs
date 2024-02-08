@@ -151,6 +151,18 @@ impl fmt::Display for TwilioApiError {
     }
 }
 
+/// Holds the page information from the API.
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct PageMeta {
+    page: u16,
+    page_size: u16,
+    first_page_url: String,
+    previous_page_url: Option<String>,
+    next_page_url: Option<String>,
+    key: String,
+}
+
 /// Available Twilio resources to access.
 #[derive(Display, EnumIter, EnumString, PartialEq)]
 pub enum SubResource {

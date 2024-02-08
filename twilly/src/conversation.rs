@@ -9,7 +9,7 @@ use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 
-use crate::{Client, TwilioError};
+use crate::{Client, PageMeta, TwilioError};
 
 /// Holds conversation related functions accessible
 /// on the client.
@@ -22,19 +22,7 @@ pub struct Conversations<'a> {
 #[derive(Deserialize)]
 pub struct ConversationPage {
     conversations: Vec<Conversation>,
-    meta: ConversationPageMeta,
-}
-
-/// Holds the actual page information from the API.
-#[allow(dead_code)]
-#[derive(Deserialize)]
-pub struct ConversationPageMeta {
-    page: u16,
-    page_size: u16,
-    first_page_url: String,
-    previous_page_url: Option<String>,
-    next_page_url: Option<String>,
-    key: String,
+    meta: PageMeta,
 }
 
 /// Details related to a specific conversation.

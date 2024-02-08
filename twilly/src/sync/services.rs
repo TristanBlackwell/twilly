@@ -4,35 +4,17 @@ Contains Twilio Sync related functionality.
 
 */
 
-use crate::{Client, TwilioError};
+use crate::{Client, PageMeta, TwilioError};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-
-/// Holds Sync related functions accessible
-/// on the client.
-pub struct Sync<'a> {
-    pub client: &'a Client,
-}
 
 /// Represents a page of Sync Services from the Twilio API.
 #[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct SyncServicePage {
     services: Vec<SyncService>,
-    meta: SyncServicePageMeta,
-}
-
-/// Holds the actual page information from the API.
-#[allow(dead_code)]
-#[derive(Deserialize)]
-pub struct SyncServicePageMeta {
-    page: u16,
-    page_size: u16,
-    first_page_url: String,
-    previous_page_url: Option<String>,
-    next_page_url: Option<String>,
-    key: String,
+    meta: PageMeta,
 }
 
 /// A Sync Service resource.
@@ -115,7 +97,7 @@ impl<'a> Services<'a> {
         let service = self
             .client
             .send_request::<SyncService, CreateOrUpdateParams>(
-                Method::GET,
+                Method::POST,
                 "https://sync.twilio.com/v1/Services",
                 Some(&params),
             );
@@ -128,10 +110,6 @@ impl<'a> Services<'a> {
     /// This will list Sync Services existing on the Twilio account.
     ///
     /// Services will be _eagerly_ paged until all retrieved.
-    ///
-    /// Takes optional parameters:
-    /// - `friendly_name` - Return only accounts matching this friendly name
-    /// - `status` - Return only accounts that match this status
     pub fn list(&self) -> Result<Vec<SyncService>, TwilioError> {
         let mut services_page = self.client.send_request::<SyncServicePage, ()>(
             Method::GET,
@@ -192,10 +170,7 @@ impl<'a> Service<'a> {
             .client
             .send_request::<SyncService, CreateOrUpdateParams>(
                 Method::POST,
-                &format!(
-                    "https://conversations.twilio.com/v1/Conversations/{}",
-                    self.sid
-                ),
+                &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
                 Some(&params),
             );
 
