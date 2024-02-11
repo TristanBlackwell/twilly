@@ -7,6 +7,7 @@ Contains Twilio Sync Document related functionality.
 use crate::{Client, PageMeta, TwilioError};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use serde_with::skip_serializing_none;
 
 /// Represents a page of Sync Services from the Twilio API.
@@ -18,17 +19,17 @@ pub struct DocumentPage {
 }
 
 /// A Sync Service resource.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SyncDocument {
     pub sid: String,
-    pub unique_name: Option<String>,
+    pub unique_name: String,
     pub account_sid: String,
     pub service_sid: String,
     pub url: String,
-    pub data: String,
+    pub data: Value,
     pub date_created: String,
     pub date_updated: String,
-    pub date_expires: String,
+    pub date_expires: Option<String>,
     /// Identity of the Document creator. Uses the identity of the
     /// respective client or defaults to `system` if created via REST.
     pub created_by: String,
@@ -73,12 +74,12 @@ pub struct UpdateParams {
     ttl: Option<bool>,
 }
 
-pub struct Documents<'a> {
+pub struct Documents<'a, 'b> {
     pub client: &'a Client,
-    pub service_sid: String,
+    pub service_sid: &'b str,
 }
 
-impl<'a> Documents<'a> {
+impl<'a, 'b> Documents<'a, 'b> {
     /// [Creates a Sync Document](https://www.twilio.com/docs/sync/api/document-resource)
     ///
     /// Creates a Sync Document with the provided parameters.
@@ -126,14 +127,14 @@ impl<'a> Documents<'a> {
     }
 }
 
-pub struct Document<'a> {
+pub struct Document<'a, 'b> {
     pub client: &'a Client,
-    pub service_sid: String,
+    pub service_sid: &'b str,
     /// SID of the Sync Document
-    pub sid: String,
+    pub sid: &'b str,
 }
 
-impl<'a> Document<'a> {
+impl<'a, 'b> Document<'a, 'b> {
     /// [Gets a Sync Document](https://www.twilio.com/docs/sync/api/document-resource#fetch-a-document-resource)
     ///
     /// Targets the Sync Service provided to the `Service` argument and fetches the Document

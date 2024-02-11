@@ -1,5 +1,6 @@
 mod account;
 mod conversation;
+mod sync;
 
 use std::{process, str::FromStr};
 
@@ -81,6 +82,7 @@ fn main() {
         match sub_resource {
             twilly::SubResource::Account => account::choose_account_action(&twilio),
             twilly::SubResource::Conversations => conversation::choose_conversation_action(&twilio),
+            twilly::SubResource::Sync => sync::choose_sync_resource(&twilio),
         }
     }
 }

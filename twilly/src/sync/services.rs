@@ -9,6 +9,8 @@ use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
+use super::documents::{Document, Documents};
+
 /// Represents a page of Sync Services from the Twilio API.
 #[allow(dead_code)]
 #[derive(Deserialize)]
@@ -18,7 +20,7 @@ pub struct SyncServicePage {
 }
 
 /// A Sync Service resource.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SyncService {
     pub sid: String,
     pub unique_name: String,
@@ -27,7 +29,7 @@ pub struct SyncService {
     pub date_created: String,
     pub date_updated: String,
     pub url: String,
-    pub webhook_url: String,
+    pub webhook_url: Option<String>,
     pub webhooks_from_rest_enabled: bool,
     /// Requires identities to be granted access to the Sync Service
     pub acl_enabled: bool,
@@ -133,12 +135,12 @@ impl<'a> Services<'a> {
     }
 }
 
-pub struct Service<'a> {
+pub struct Service<'a, 'b> {
     pub client: &'a Client,
-    pub sid: String,
+    pub sid: &'b str,
 }
 
-impl<'a> Service<'a> {
+impl<'a, 'b> Service<'a, 'b> {
     /// [Gets a Sync Service](https://www.twilio.com/docs/sync/api/service#fetch-a-service-resource)
     ///
     /// Targets the Sync Service provided to the `Service` argument and fetches the resource
@@ -188,6 +190,25 @@ impl<'a> Service<'a> {
         );
 
         service
+    }
+
+    /// Functions relating to a known Sync Document.
+    ///
+    /// Takes in the SID of the Sync  to perform actions against.
+    pub fn document(&'a self, sid: &'b str) -> Document {
+        Document {
+            client: self.client,
+            service_sid: self.sid,
+            sid,
+        }
+    }
+
+    /// General Sync Document functions.
+    pub fn documents(&'a self) -> Documents {
+        Documents {
+            client: self.client,
+            service_sid: self.sid.clone(),
+        }
     }
 }
 

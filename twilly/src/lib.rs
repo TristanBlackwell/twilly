@@ -168,6 +168,7 @@ pub struct PageMeta {
 pub enum SubResource {
     Account,
     Conversations,
+    Sync,
 }
 
 impl Client {
