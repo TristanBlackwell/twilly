@@ -207,7 +207,7 @@ impl<'a, 'b> Service<'a, 'b> {
     pub fn documents(&'a self) -> Documents {
         Documents {
             client: self.client,
-            service_sid: self.sid.clone(),
+            service_sid: self.sid,
         }
     }
 }
