@@ -71,8 +71,10 @@ pub fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
                                                 {
                                                     println!("Deleting Document...");
                                                     twilio
-                                                        .conversations()
-                                                        .delete(&document_sid)
+                                                        .sync()
+                                                        .service(&sync_service.sid)
+                                                        .document(&document_sid)
+                                                        .delete()
                                                         .unwrap_or_else(|error| {
                                                             panic!("{}", error)
                                                         });
@@ -140,9 +142,8 @@ pub fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
                                         ActionChoice::Other(choice) => {
                                             let document_position = documents
 											.iter()
-											.position(|doc| doc.sid == choice[..34])
-											.expect("Could not find documnet in existing documents list");
-
+											.position(|doc| doc.sid == choice[1..35])
+											.expect("Could not find document in existing documents list");
                                             selected_document_index = Some(document_position);
                                             &mut documents[document_position]
                                         }
@@ -158,7 +159,10 @@ pub fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
                                     "Select an action: ",
                                 ) {
                                     match action_choice {
-                                        ActionChoice::Back => break,
+                                        ActionChoice::Back => {
+                                            selected_document_index = None;
+                                            break;
+                                        }
                                         ActionChoice::Exit => process::exit(0),
                                         ActionChoice::Other(choice) => match choice.as_str() {
                                             "List Details" => {
@@ -175,8 +179,10 @@ pub fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
                                                 {
                                                     println!("Deleting Document...");
                                                     twilio
-                                                        .conversations()
-                                                        .delete(&selected_document.sid)
+                                                        .sync()
+                                                        .service(&sync_service.sid)
+                                                        .document(&selected_document.sid)
+                                                        .delete()
                                                         .unwrap_or_else(|error| {
                                                             panic!("{}", error)
                                                         });
