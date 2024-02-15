@@ -4,6 +4,7 @@ Contains Twilio Sync related functionality.
 
 */
 pub mod documents;
+pub mod maps;
 pub mod services;
 
 use crate::Client;

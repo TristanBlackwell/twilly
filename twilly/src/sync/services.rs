@@ -9,7 +9,10 @@ use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
-use super::documents::{Document, Documents};
+use super::{
+    documents::{Document, Documents},
+    maps::{Map, Maps},
+};
 
 /// Represents a page of Sync Services from the Twilio API.
 #[allow(dead_code)]
@@ -44,7 +47,7 @@ pub struct SyncService {
     pub links: Links,
 }
 
-/// Links to resources _linked_ to a conversation
+/// Links to resources _linked_ to a Service
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub documents: String,
@@ -85,7 +88,7 @@ pub struct Services<'a> {
 impl<'a> Services<'a> {
     /// [Creates a Sync Service](https://www.twilio.com/docs/sync/api/service#create-a-service-resource)
     ///
-    /// Takes in an `sid` argument of the Sync Service to fetch. Can also be the unique name
+    /// Creates a Sync Service resource with the provided parameters.
     pub fn create(&self, params: CreateOrUpdateParams) -> Result<SyncService, TwilioError> {
         if let Some(reachability_debouncing_window) = params.reachability_debouncing_window {
             let validation =
@@ -143,7 +146,7 @@ pub struct Service<'a, 'b> {
 impl<'a, 'b> Service<'a, 'b> {
     /// [Gets a Sync Service](https://www.twilio.com/docs/sync/api/service#fetch-a-service-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and fetches the resource
+    /// Targets the Sync Service provided to the `sid` argument and fetches the resource
     pub fn get(&self) -> Result<SyncService, TwilioError> {
         let service = self.client.send_request::<SyncService, ()>(
             Method::GET,
@@ -179,7 +182,7 @@ impl<'a, 'b> Service<'a, 'b> {
         service
     }
 
-    /// [Deletes a Sync Service](https://www.twilio.com/docs/sync/api/service#delete-a-service-resourcee)
+    /// [Deletes a Sync Service](https://www.twilio.com/docs/sync/api/service#delete-a-service-resource)
     ///
     /// Targets the Sync Service provided to the `Service` argument and deletes the resource.
     pub fn delete(&self) -> Result<(), TwilioError> {
@@ -194,7 +197,7 @@ impl<'a, 'b> Service<'a, 'b> {
 
     /// Functions relating to a known Sync Document.
     ///
-    /// Takes in the SID of the Sync  to perform actions against.
+    /// Takes in the SID of the Sync Document to perform actions against.
     pub fn document(&'a self, sid: &'b str) -> Document {
         Document {
             client: self.client,
@@ -206,6 +209,25 @@ impl<'a, 'b> Service<'a, 'b> {
     /// General Sync Document functions.
     pub fn documents(&'a self) -> Documents {
         Documents {
+            client: self.client,
+            service_sid: self.sid,
+        }
+    }
+
+    /// Functions relating to a known Sync Map.
+    ///
+    /// Takes in the SID of the Sync Map to perform actions against.
+    pub fn map(&'a self, sid: &'b str) -> Map {
+        Map {
+            client: self.client,
+            service_sid: self.sid,
+            sid,
+        }
+    }
+
+    /// General Sync Map functions.
+    pub fn maps(&'a self) -> Maps {
+        Maps {
             client: self.client,
             service_sid: self.sid,
         }
