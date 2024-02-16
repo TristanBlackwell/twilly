@@ -9,6 +9,8 @@ use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
+use super::mapitems::{MapItem, MapItems};
+
 /// Represents a page of Sync Maps from the Twilio API.
 #[allow(dead_code)]
 #[derive(Deserialize)]
@@ -178,5 +180,26 @@ impl<'a, 'b> Map<'a, 'b> {
         );
 
         map
+    }
+
+    /// Functions relating to a known Sync Map Item.
+    ///
+    /// Takes in the key of the Sync Map Item to perform actions against.
+    pub fn mapitem(&'a self, key: &'b str) -> MapItem {
+        MapItem {
+            client: self.client,
+            service_sid: self.service_sid,
+            map_sid: self.sid,
+            key,
+        }
+    }
+
+    /// General Sync Map Item functions.
+    pub fn mapitems(&'a self) -> MapItems {
+        MapItems {
+            client: self.client,
+            service_sid: self.service_sid,
+            map_sid: self.sid,
+        }
     }
 }

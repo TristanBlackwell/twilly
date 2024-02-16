@@ -11,6 +11,7 @@ use serde_with::skip_serializing_none;
 
 use super::{
     documents::{Document, Documents},
+    mapitems::MapItem,
     maps::{Map, Maps},
 };
 
