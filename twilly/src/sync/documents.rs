@@ -30,14 +30,14 @@ pub struct SyncDocument {
     pub date_created: String,
     pub date_updated: String,
     pub date_expires: Option<String>,
-    /// Identity of the Document creator. Uses the identity of the
+    /// Identity of the creator. Uses the identity of the
     /// respective client or defaults to `system` if created via REST.
     pub created_by: String,
     pub links: Links,
     pub revision: String,
 }
 
-/// Links to resources _linked_ to a conversation
+/// Links to resources _linked_ to a document
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub permissions: String,
@@ -51,27 +51,27 @@ impl Default for Links {
     }
 }
 
-/// Arguments for creating or updating a Sync Service
+/// Arguments for creating a Sync Service
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
 pub struct CreateParams {
     unique_name: Option<String>,
-    data: String,
+    data: Value,
     /// How long the Document should exist before deletion (in seconds).
-    ttl: Option<bool>,
+    ttl: Option<u16>,
 }
 
-/// Arguments for creating or updating a Sync Service
+/// Arguments for updating a Sync Service
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
 pub struct UpdateParams {
     #[serde(rename(serialize = "If-Match"))]
     if_match: Option<String>,
-    data: String,
+    data: Value,
     /// How long the Document should exist before deletion (in seconds).
-    ttl: Option<bool>,
+    ttl: Option<u16>,
 }
 
 pub struct Documents<'a, 'b> {

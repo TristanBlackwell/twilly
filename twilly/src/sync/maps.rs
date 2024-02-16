@@ -28,7 +28,7 @@ pub struct SyncMap {
     pub date_created: String,
     pub date_updated: String,
     pub date_expires: Option<String>,
-    /// Identity of the Document creator. Uses the identity of the
+    /// Identity of the creator. Uses the identity of the
     /// respective client or defaults to `system` if created via REST.
     pub created_by: String,
     pub links: Links,
@@ -78,7 +78,7 @@ impl<'a, 'b> Maps<'a, 'b> {
     ///
     /// Creates a Sync Map resource with the provided parameters.
     pub fn create(&self, params: CreateParams) -> Result<SyncMap, TwilioError> {
-        let service = self.client.send_request::<SyncMap, CreateParams>(
+        let map = self.client.send_request::<SyncMap, CreateParams>(
             Method::POST,
             &format!(
                 "https://sync.twilio.com/v1/Services/{}/Maps",
@@ -87,7 +87,7 @@ impl<'a, 'b> Maps<'a, 'b> {
             Some(&params),
         );
 
-        service
+        map
     }
 
     /// [Lists Sync Maps](https://www.twilio.com/docs/sync/api/map-resource#read-multiple-syncmap-resources)
@@ -96,7 +96,7 @@ impl<'a, 'b> Maps<'a, 'b> {
     ///
     /// Maps will be _eagerly_ paged until all retrieved.
     pub fn list(&self) -> Result<Vec<SyncMap>, TwilioError> {
-        let mut services_page = self.client.send_request::<SyncMapPage, ()>(
+        let mut maps_page = self.client.send_request::<SyncMapPage, ()>(
             Method::GET,
             &format!(
                 "https://sync.twilio.com/v1/Services/{}/Maps?PageSize=20",
@@ -105,16 +105,16 @@ impl<'a, 'b> Maps<'a, 'b> {
             None,
         )?;
 
-        let mut results: Vec<SyncMap> = services_page.maps;
+        let mut results: Vec<SyncMap> = maps_page.maps;
 
-        while (services_page.meta.next_page_url).is_some() {
-            services_page = self.client.send_request::<SyncMapPage, ()>(
+        while (maps_page.meta.next_page_url).is_some() {
+            maps_page = self.client.send_request::<SyncMapPage, ()>(
                 Method::GET,
-                &services_page.meta.next_page_url.unwrap(),
+                &maps_page.meta.next_page_url.unwrap(),
                 None,
             )?;
 
-            results.append(&mut services_page.maps);
+            results.append(&mut maps_page.maps);
         }
 
         Ok(results)
@@ -134,7 +134,7 @@ impl<'a, 'b> Map<'a, 'b> {
     /// Targets the Sync Service provided to the `Service` argument and fetches the map resource described
     /// by `sid`. Can also be the unique name.
     pub fn get(&self) -> Result<SyncMap, TwilioError> {
-        let service = self.client.send_request::<SyncMap, ()>(
+        let map = self.client.send_request::<SyncMap, ()>(
             Method::GET,
             &format!(
                 "https://sync.twilio.com/v1/Services/{}/Maps/{}",
@@ -143,7 +143,7 @@ impl<'a, 'b> Map<'a, 'b> {
             None,
         );
 
-        service
+        map
     }
 
     /// [Update a Sync Map](https://www.twilio.com/docs/sync/api/map-resource#update-a-syncmap-resource)
@@ -151,7 +151,7 @@ impl<'a, 'b> Map<'a, 'b> {
     /// Targets the Sync Service provided to the `Service` argument and updates the resource with
     /// the provided properties
     pub fn update(&self, params: UpdateParams) -> Result<SyncMap, TwilioError> {
-        let service = self.client.send_request::<SyncMap, UpdateParams>(
+        let map = self.client.send_request::<SyncMap, UpdateParams>(
             Method::POST,
             &format!(
                 "https://sync.twilio.com/v1/Services/{}/Maps/{}",
@@ -160,7 +160,7 @@ impl<'a, 'b> Map<'a, 'b> {
             Some(&params),
         );
 
-        service
+        map
     }
 
     /// [Deletes a Sync Map](https://www.twilio.com/docs/sync/api/map-resource#delete-a-sync-map-resource)
@@ -168,7 +168,7 @@ impl<'a, 'b> Map<'a, 'b> {
     /// Targets the Sync Service provided to the `Service` argument and the map described
     /// by `sid` and deletes the resource.
     pub fn delete(&self) -> Result<(), TwilioError> {
-        let service = self.client.send_request_and_ignore_response::<()>(
+        let map = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,
             &format!(
                 "https://sync.twilio.com/v1/Services/{}/Maps/{}",
@@ -177,6 +177,6 @@ impl<'a, 'b> Map<'a, 'b> {
             None,
         );
 
-        service
+        map
     }
 }
