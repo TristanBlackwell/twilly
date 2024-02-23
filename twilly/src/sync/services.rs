@@ -26,7 +26,7 @@ pub struct SyncServicePage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SyncService {
     pub sid: String,
-    pub unique_name: String,
+    pub unique_name: Option<String>,
     pub account_sid: String,
     pub friendly_name: Option<String>,
     pub date_created: String,
@@ -72,13 +72,13 @@ impl Default for Links {
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
 pub struct CreateOrUpdateParams {
-    friendly_name: Option<String>,
-    webhook_url: Option<String>,
-    reachability_webhooks_enabled: Option<bool>,
-    acl_enabled: Option<bool>,
-    reachability_debouncing_enabled: Option<bool>,
-    reachability_debouncing_window: Option<u16>,
-    webhooks_from_rest_enabled: Option<bool>,
+    pub friendly_name: Option<String>,
+    pub webhook_url: Option<String>,
+    pub reachability_webhooks_enabled: Option<bool>,
+    pub acl_enabled: Option<bool>,
+    pub reachability_debouncing_enabled: Option<bool>,
+    pub reachability_debouncing_window: Option<u16>,
+    pub webhooks_from_rest_enabled: Option<bool>,
 }
 
 pub struct Services<'a> {
