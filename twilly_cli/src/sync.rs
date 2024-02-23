@@ -1,13 +1,14 @@
 mod documents;
+mod mapitems;
 mod maps;
 
 use std::process;
 
-use inquire::Select;
+use inquire::{Confirm, Select};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use twilly::Client;
-use twilly_cli::{get_action_choice_from_user, prompt_user_selection, ActionChoice};
+use twilly_cli::{get_action_choice_from_user, prompt_user, prompt_user_selection, ActionChoice};
 
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum Action {
@@ -80,7 +81,27 @@ pub fn choose_sync_resource(twilio: &Client) {
                     println!("{:#?}", selected_sync_service);
                     println!()
                 }
-                Action::Delete => println!("Delete!"),
+                Action::Delete => {
+                    let confirm_prompt =
+                        Confirm::new("Are you sure to wish to delete the Sync Service? (Yes / No)");
+                    let confirmation = prompt_user(confirm_prompt);
+                    if confirmation.is_some() && confirmation.unwrap() == true {
+                        println!("Deleting Sync Service...");
+                        twilio
+                            .sync()
+                            .service(&selected_sync_service.sid)
+                            .delete()
+                            .unwrap_or_else(|error| panic!("{}", error));
+                        sync_services.remove(
+                            selected_sync_service_index.expect(
+                                "Could not find Sync Service in existing Sync Services list",
+                            ),
+                        );
+                        println!("Sync Service deleted.");
+                        println!();
+                        break;
+                    }
+                }
                 Action::Back => break,
                 Action::Exit => process::exit(0),
             }

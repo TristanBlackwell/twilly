@@ -3,15 +3,14 @@ use std::process;
 use inquire::{Confirm, Select};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
-use twilly::{sync::services::SyncService, Client};
+use twilly::{
+    sync::{mapitems::ListParams, maps::SyncMap, services::SyncService},
+    Client,
+};
 use twilly_cli::{get_action_choice_from_user, prompt_user, prompt_user_selection, ActionChoice};
-
-use crate::sync::mapitems;
 
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum Action {
-    #[strum(to_string = "Map Items")]
-    MapItem,
     #[strum(to_string = "List Details")]
     ListDetails,
     Delete,
@@ -19,30 +18,35 @@ pub enum Action {
     Exit,
 }
 
-pub fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
-    let mut sync_maps = twilio
+pub fn choose_map_item_action(twilio: &Client, sync_service: &SyncService, map: &SyncMap) {
+    let mut sync_map_items = twilio
         .sync()
         .service(&sync_service.sid)
-        .maps()
-        .list()
+        .map(&map.sid)
+        .mapitems()
+        .list(ListParams {
+            order: None,
+            bounds: None,
+            from: None,
+        })
         .unwrap_or_else(|error| panic!("{}", error));
 
-    if sync_maps.len() == 0 {
-        println!("No Sync Maps found.");
+    if sync_map_items.len() == 0 {
+        println!("No Sync Map items found.");
         return;
     }
 
-    println!("Found {} Sync Maps.", sync_maps.len());
+    println!("Found {} Sync Maps items.", sync_map_items.len());
 
     let mut selected_sync_map_index: Option<usize> = None;
     loop {
-        let selected_sync_map = if let Some(index) = selected_sync_map_index {
-            &mut sync_maps[index]
+        let selected_sync_map_item = if let Some(index) = selected_sync_map_index {
+            &mut sync_map_items[index]
         } else {
             if let Some(action_choice) = get_action_choice_from_user(
-                sync_maps
+                sync_map_items
                     .iter()
-                    .map(|map| format!("({}) {}", map.sid, map.unique_name))
+                    .map(|map_item| format!("{}", map_item.key))
                     .collect::<Vec<String>>(),
                 "Choose a Sync Map: ",
             ) {
@@ -52,13 +56,13 @@ pub fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                     }
                     ActionChoice::Exit => process::exit(0),
                     ActionChoice::Other(choice) => {
-                        let sync_map_position = sync_maps
+                        let sync_map_position = sync_map_items
                             .iter()
-                            .position(|map| map.sid == choice[1..35])
+                            .position(|map| map.key == choice)
                             .expect("Could not find Sync Map in existing Sync Map list");
 
                         selected_sync_map_index = Some(sync_map_position);
-                        &mut sync_maps[sync_map_position]
+                        &mut sync_map_items[sync_map_position]
                     }
                 }
             } else {
@@ -70,30 +74,27 @@ pub fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
         let resource_selection_prompt = Select::new("Select an action:", options.clone());
         if let Some(resource) = prompt_user_selection(resource_selection_prompt) {
             match resource {
-                Action::MapItem => {
-                    mapitems::choose_map_item_action(&twilio, sync_service, &selected_sync_map)
-                }
-
                 Action::ListDetails => {
-                    println!("{:#?}", selected_sync_map);
+                    println!("{:#?}", selected_sync_map_item);
                     println!()
                 }
                 Action::Delete => {
-                    let confirm_prompt =
-                        Confirm::new("Are you sure to wish to delete the Sync Map? (Yes / No)");
+                    let confirm_prompt = Confirm::new(
+                        "Are you sure to wish to delete the Sync Map item? (Yes / No)",
+                    );
                     let confirmation = prompt_user(confirm_prompt);
                     if confirmation.is_some() && confirmation.unwrap() == true {
-                        println!("Deleting Sync Map...");
+                        println!("Deleting Sync Map item...");
                         twilio
                             .sync()
                             .service(&sync_service.sid)
-                            .map(&selected_sync_map.sid)
+                            .map(&map.sid)
+                            .mapitem(&selected_sync_map_item.key)
                             .delete()
                             .unwrap_or_else(|error| panic!("{}", error));
-                        sync_maps.remove(
-                            selected_sync_map_index
-                                .expect("Could not find Sync Map in existing Sync Maps list"),
-                        );
+                        sync_map_items.remove(selected_sync_map_index.expect(
+                            "Could not find Sync Map item in existing Sync Map items list",
+                        ));
                         println!("Sync Map deleted.");
                         println!();
                         break;

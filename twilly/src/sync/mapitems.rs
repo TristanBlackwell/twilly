@@ -66,11 +66,11 @@ pub enum Bounds {
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
 pub struct ListParams {
-    order: Option<Order>,
+    pub order: Option<Order>,
     // The key of the first Map Item to read.
-    from: Option<String>,
+    pub from: Option<String>,
     /// Whether to include the Map Item described by the `from` parameter. Defaults to inclusive.
-    bounds: Option<Bounds>,
+    pub bounds: Option<Bounds>,
 }
 
 /// Arguments for updating a Sync Map Item
