@@ -36,7 +36,7 @@ pub struct SyncMapItem {
     pub revision: String,
 }
 
-/// Arguments for creating a Sync Map Item
+/// Parameters for creating a Sync Map Item
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
@@ -55,6 +55,7 @@ pub enum Order {
     Desc,
 }
 
+/// See `ListParams`
 #[derive(Serialize)]
 pub enum Bounds {
     Inclusive,
@@ -73,7 +74,7 @@ pub struct ListParams {
     pub bounds: Option<Bounds>,
 }
 
-/// Arguments for updating a Sync Map Item
+/// Parameters for updating a Sync Map Item
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
@@ -113,7 +114,10 @@ impl<'a, 'b> MapItems<'a, 'b> {
 
     /// [Lists Sync Map Items](https://www.twilio.com/docs/sync/api/map-item-resource#read-all-mapitem-resources)
     ///
-    /// This will list Sync Map Items In the targeted Service and Map.
+    /// List Sync Map Items In the targeted Service and Map.
+    ///
+    /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
+    /// argument and lists all Map items.
     ///
     /// Map items will be _eagerly_ paged until all retrieved.
     pub fn list(&self, params: ListParams) -> Result<Vec<SyncMapItem>, TwilioError> {
@@ -153,8 +157,8 @@ pub struct MapItem<'a, 'b> {
 impl<'a, 'b> MapItem<'a, 'b> {
     /// [Gets a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#fetch-a-mapitem-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and the Map provided to the `Map` argument
-    /// and fetches the key provided
+    /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
+    /// argument and fetches the item with the key provided to `mapitem()`.
     pub fn get(&self) -> Result<SyncMapItem, TwilioError> {
         let map_item = self.client.send_request::<SyncMapItem, ()>(
             Method::GET,
@@ -170,8 +174,8 @@ impl<'a, 'b> MapItem<'a, 'b> {
 
     /// [Update a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#update-a-mapitem-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and and the Map provided to the `Map` argument
-    /// and updates the targeted key
+    /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
+    /// argument and updates the item with the key provided to `mapitem()` with the parameters.
     pub fn update(&self, params: UpdateParams) -> Result<SyncMapItem, TwilioError> {
         let map_item = self.client.send_request::<SyncMapItem, UpdateParams>(
             Method::POST,
@@ -187,8 +191,8 @@ impl<'a, 'b> MapItem<'a, 'b> {
 
     /// [Deletes a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#delete-a-mapitem-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and the Map provided to the `Map` argument
-    /// and DELETES the targeted key.
+    /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
+    /// argument and deletes the item with the key provided to `mapitem()`.
     pub fn delete(&self) -> Result<(), TwilioError> {
         let service = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,

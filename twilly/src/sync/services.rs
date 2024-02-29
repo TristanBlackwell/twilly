@@ -1,6 +1,6 @@
 /*!
 
-Contains Twilio Sync related functionality.
+Contains Twilio Sync Service related functionality.
 
 */
 
@@ -38,7 +38,7 @@ pub struct SyncService {
     pub acl_enabled: bool,
     /// Whether the `endpoint_disconnected` webhook should occur after a
     /// specified delay period or immediately on disconnection. This gives clients
-    /// the opportunity to re-connect without the event being fired. Defaults to `false``.
+    /// the opportunity to re-connect without the event being fired. Defaults to `false`.
     pub reachability_debouncing_enabled: bool,
     /// The delay (in milliseconds) the Service will wait to send an `endpoint_disconnected`
     /// event when the last connected client disconnects. Defaults to `5000` but can range
@@ -47,7 +47,7 @@ pub struct SyncService {
     pub links: Links,
 }
 
-/// Links to resources _linked_ to a Service
+/// Resources _linked_ to a Service
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub documents: String,
@@ -67,7 +67,8 @@ impl Default for Links {
     }
 }
 
-/// Arguments for creating or updating a Sync Service
+/// Parameters for creating or updating a Sync Service. See `SyncService` for
+/// details on individual parameters.
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
@@ -112,7 +113,7 @@ impl<'a> Services<'a> {
 
     /// [Lists Sync Services](https://www.twilio.com/docs/sync/api/service#read-multiple-service-resources)
     ///
-    /// This will list Sync Services existing on the Twilio account.
+    /// List Sync Services existing on the Twilio account.
     ///
     /// Services will be _eagerly_ paged until all retrieved.
     pub fn list(&self) -> Result<Vec<SyncService>, TwilioError> {
@@ -146,7 +147,7 @@ pub struct Service<'a, 'b> {
 impl<'a, 'b> Service<'a, 'b> {
     /// [Gets a Sync Service](https://www.twilio.com/docs/sync/api/service#fetch-a-service-resource)
     ///
-    /// Targets the Sync Service provided to the `sid` argument and fetches the resource
+    /// Fetches the Sync Service provided to the `Service()`.
     pub fn get(&self) -> Result<SyncService, TwilioError> {
         let service = self.client.send_request::<SyncService, ()>(
             Method::GET,
@@ -159,7 +160,7 @@ impl<'a, 'b> Service<'a, 'b> {
 
     /// [Update a Sync Service](https://www.twilio.com/docs/sync/api/service#update-a-service-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and updates the resource with
+    /// Targets the Sync Service provided to the `Service()` argument and updates the resource with
     /// the provided properties
     pub fn update(&self, params: CreateOrUpdateParams) -> Result<SyncService, TwilioError> {
         if let Some(reachability_debouncing_window) = params.reachability_debouncing_window {
@@ -184,7 +185,8 @@ impl<'a, 'b> Service<'a, 'b> {
 
     /// [Deletes a Sync Service](https://www.twilio.com/docs/sync/api/service#delete-a-service-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and deletes the resource.
+    /// Targets the Sync Service provided to the `Service()` argument and deletes the resource.
+    /// **Use with caution. All sub resources (documents, maps, ...) will also be removed.**
     pub fn delete(&self) -> Result<(), TwilioError> {
         let service = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,
@@ -234,8 +236,8 @@ impl<'a, 'b> Service<'a, 'b> {
     }
 }
 
-/// Validates that the provided `reachability_debouncing_window` is between it's
-/// expected millisecond values.
+// Validates that the provided `reachability_debouncing_window` is between it's
+// expected millisecond values.
 fn validate_reachability_debouncing_window(
     reachability_debouncing_window: u16,
 ) -> Result<(), TwilioError> {

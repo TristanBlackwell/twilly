@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::skip_serializing_none;
 
-/// Represents a page of Sync Services from the Twilio API.
+/// Represents a page of Sync Documents from the Twilio API.
 #[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct DocumentPage {
@@ -18,7 +18,7 @@ pub struct DocumentPage {
     meta: PageMeta,
 }
 
-/// A Sync Service resource.
+/// A Sync Document resource.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SyncDocument {
     pub sid: String,
@@ -37,7 +37,7 @@ pub struct SyncDocument {
     pub revision: String,
 }
 
-/// Links to resources _linked_ to a document
+/// Resources _linked_ to a document
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub permissions: String,
@@ -51,7 +51,7 @@ impl Default for Links {
     }
 }
 
-/// Arguments for creating a Sync Service
+/// Parameters for creating a Sync Document
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
@@ -62,7 +62,7 @@ pub struct CreateParams {
     ttl: Option<u16>,
 }
 
-/// Arguments for updating a Sync Service
+/// Parameters for updating a Sync Service
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
@@ -98,7 +98,7 @@ impl<'a, 'b> Documents<'a, 'b> {
 
     /// [Lists Sync Documents](https://www.twilio.com/docs/sync/api/document-resource#read-multiple-document-resources)
     ///
-    /// This will list Sync Documents In the targeted Service.
+    /// Lists Sync Documents in the Sync Service provided to the `service()`.
     ///
     /// Documents will be _eagerly_ paged until all retrieved.
     pub fn list(&self) -> Result<Vec<SyncDocument>, TwilioError> {
@@ -130,15 +130,15 @@ impl<'a, 'b> Documents<'a, 'b> {
 pub struct Document<'a, 'b> {
     pub client: &'a Client,
     pub service_sid: &'b str,
-    /// SID of the Sync Document
+    /// SID of the Sync Document. Can also be the friendly name.
     pub sid: &'b str,
 }
 
 impl<'a, 'b> Document<'a, 'b> {
     /// [Gets a Sync Document](https://www.twilio.com/docs/sync/api/document-resource#fetch-a-document-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and fetches the Document
-    /// provided
+    /// Targets the Sync Service provided to the `service()` argument and fetches the Document
+    /// provided to the `document()` argument.
     pub fn get(&self) -> Result<SyncDocument, TwilioError> {
         let document = self.client.send_request::<SyncDocument, ()>(
             Method::GET,
@@ -154,8 +154,8 @@ impl<'a, 'b> Document<'a, 'b> {
 
     /// [Update a Sync Document](https://www.twilio.com/docs/sync/api/document-resource#update-a-document-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and updates the targeted
-    /// Document
+    /// Targets the Sync Service provided to the `service()` argument and updates the Document
+    /// provided to the `document()` argument.
     pub fn update(&self, params: UpdateParams) -> Result<SyncDocument, TwilioError> {
         let document = self.client.send_request::<SyncDocument, UpdateParams>(
             Method::POST,
@@ -171,7 +171,8 @@ impl<'a, 'b> Document<'a, 'b> {
 
     /// [Deletes a Sync Service](https://www.twilio.com/docs/sync/api/service#delete-a-service-resourcee)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and deletes the resource.
+    /// Targets the Sync Service provided to the `service()` argument and deletes the Document
+    /// provided to the `document()` argument.
     pub fn delete(&self) -> Result<(), TwilioError> {
         let service = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,

@@ -37,7 +37,7 @@ pub struct SyncMap {
     pub revision: String,
 }
 
-/// Links to resources _linked_ to a Sync Map
+/// Resources _linked_ to a Sync Map
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub items: String,
@@ -53,7 +53,7 @@ impl Default for Links {
     }
 }
 
-/// Arguments for creating a Sync Map
+/// Parameters for creating a Sync Map
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
@@ -62,7 +62,7 @@ pub struct CreateParams {
     ttl: Option<bool>,
 }
 
-/// Arguments for updating a Sync Map
+/// Parameters for updating a Sync Map
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
@@ -94,7 +94,7 @@ impl<'a, 'b> Maps<'a, 'b> {
 
     /// [Lists Sync Maps](https://www.twilio.com/docs/sync/api/map-resource#read-multiple-syncmap-resources)
     ///
-    /// This will list Sync Maps existing on the Twilio account.
+    /// Lists Sync Maps existing on the Twilio account.
     ///
     /// Maps will be _eagerly_ paged until all retrieved.
     pub fn list(&self) -> Result<Vec<SyncMap>, TwilioError> {
@@ -126,15 +126,15 @@ impl<'a, 'b> Maps<'a, 'b> {
 pub struct Map<'a, 'b> {
     pub client: &'a Client,
     pub service_sid: &'b str,
-    /// SID of the Sync Map
+    /// SID of the Sync Map. Can also be it's unique name.
     pub sid: &'b str,
 }
 
 impl<'a, 'b> Map<'a, 'b> {
     /// [Gets a Sync Map](https://www.twilio.com/docs/sync/api/map-resource#fetch-a-syncmap-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and fetches the map resource described
-    /// by `sid`. Can also be the unique name.
+    /// Targets the Sync Service provided to the `service()` argument and fetches the Map
+    /// provided to the `map()` argument.
     pub fn get(&self) -> Result<SyncMap, TwilioError> {
         let map = self.client.send_request::<SyncMap, ()>(
             Method::GET,
@@ -150,8 +150,8 @@ impl<'a, 'b> Map<'a, 'b> {
 
     /// [Update a Sync Map](https://www.twilio.com/docs/sync/api/map-resource#update-a-syncmap-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and updates the resource with
-    /// the provided properties
+    /// Targets the Sync Service provided to the `service()` argument  and updates the Map
+    /// provided to the `map()` argument.
     pub fn update(&self, params: UpdateParams) -> Result<SyncMap, TwilioError> {
         let map = self.client.send_request::<SyncMap, UpdateParams>(
             Method::POST,
@@ -167,8 +167,10 @@ impl<'a, 'b> Map<'a, 'b> {
 
     /// [Deletes a Sync Map](https://www.twilio.com/docs/sync/api/map-resource#delete-a-sync-map-resource)
     ///
-    /// Targets the Sync Service provided to the `Service` argument and the map described
-    /// by `sid` and deletes the resource.
+    /// Targets the Sync Service provided to the `service()` argument and deletes the Map
+    /// provided to the `map()` argument.
+    ///
+    /// This will delete any Sync Map items underneath this map.
     pub fn delete(&self) -> Result<(), TwilioError> {
         let map = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,

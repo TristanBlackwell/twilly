@@ -49,7 +49,7 @@ impl fmt::Display for Conversation {
     }
 }
 
-/// Details related to a specific conversation.
+/// Possible options when updating a Conversation
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
 pub struct UpdateConversation {
@@ -66,10 +66,13 @@ pub struct UpdateConversation {
 )]
 #[serde(rename_all = "lowercase")]
 pub enum State {
+    /// An active Conversation.
     #[strum(to_string = "Active")]
     Active,
+    /// A Conversation not expecting activity but remains open.
     #[strum(to_string = "Inactive")]
     Inactive,
+    /// A completed Conversation that can no longer be used.
     #[strum(to_string = "Closed")]
     Closed,
 }
@@ -90,11 +93,13 @@ impl State {
     }
 }
 
-/// The timers configured for a conversation.
+/// The timers configured for a Conversation's state.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Timers {
+    /// The time at which the Conversation will become inactive.
     #[serde(rename(serialize = "Timers.Inactive"))]
     pub date_inactive: Option<String>,
+    /// The time at which the Conversation will become closed.
     #[serde(rename(serialize = "Timers.Closed"))]
     pub date_closed: Option<String>,
 }
@@ -108,7 +113,8 @@ impl Default for Timers {
     }
 }
 
-/// Links to resources _linked_ to a conversation
+/// Resources _linked_ to a conversation. These can be used to retrieve
+/// sub resources directly.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub participants: String,
@@ -138,7 +144,7 @@ struct ListParams {
 impl<'a> Conversations<'a> {
     /// [Gets a Conversation](https://www.twilio.com/docs/conversations/api/conversation-resource#fetch-a-conversation-resource)
     ///
-    /// Takes in a `sid` argument which can also be the conversations `uniqueName`.
+    /// Takes in a `sid` argument which can also be the Conversations `uniqueName`.
     pub fn get(&self, sid: &str) -> Result<Conversation, TwilioError> {
         let conversation = self.client.send_request::<Conversation, ()>(
             Method::GET,
@@ -152,9 +158,11 @@ impl<'a> Conversations<'a> {
     /// [Lists Conversations](https://www.twilio.com/docs/conversations/api/conversation-resource#read-multiple-conversation-resources)
     ///
     /// This will eagerly fetch *all* conversations on the Twilio account and sort by recent message activity.
-    /// Takes in `start_date` and `end_date` options to filter results. This should be ISO8601 format e.g. `YYYY-MM-DDT00:00:00Z`.
     ///
-    /// Also accepts a `state` option to filter by Conversation state such as closed Conversations.
+    /// Takes optional parameters:
+    /// - `start_date` - When the Conversation started, ISO8601 format e.g. `YYYY-MM-DDT00:00:00Z`.
+    /// - `end_date` - When the Conversation ended, ISO8601 format e.g. `YYYY-MM-DDT00:00:00Z`.
+    /// - `state` - Filter by state.
     pub fn list(
         &self,
         start_date: Option<chrono::NaiveDate>,

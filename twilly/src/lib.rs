@@ -6,12 +6,12 @@ Coverage is partial yet provides an idiomatic usage pattern currently covering:
 - Accounts
 - Conversations
 
-This crate has been developed alongside the `twilly-cli` crate which provides an
+This crate has been developed alongside the `twilly-cli crate which provides an
 enhanced Twilio CLI experience.
 
 # Example
 
-Interaction is done via a Twilio client that can be created via a constructor. The config
+Interaction is done via a Twilio client that can be created via the constructor. The config
 parameter is a `TwilioConfig` struct of an account SID & auth token pair.
 
 ```
@@ -183,12 +183,15 @@ impl Client {
 
     /// Dispatches a request to Twilio and handles parsing the response.
     ///
-    /// If the method allows for a request body then `params` sends this
-    /// as X-www-form-urlencoded otherwise `params` are attached as query
+    /// The function takes two generics `T` and `U`. `T` is the expected response
+    /// body and `U` is the parameters structre.
+    ///
+    /// If the method allows for a request body then `params` is sent as
+    /// x-www-form-urlencoded otherwise `params` are attached as query
     /// string parameters.
     ///
     /// Will return a result of either the resource type or one of the
-    /// possible errors ([`Error`]).
+    /// possible errors.
     fn send_request<T, U>(
         &self,
         method: Method,
@@ -223,12 +226,7 @@ impl Client {
     /// Dispatches a request to Twilio ignoring the response returned. This is generally
     /// for mutating where either the response is irrelevant or there is nothing returned.
     ///
-    /// If the method allows for a request body then `params` sends this
-    /// as X-www-form-urlencoded otherwise `params` are attached as query
-    /// string parameters.
-    ///
-    /// Will return a result of either the resource type or one of the
-    /// possible errors ([`Error`]).
+    /// Params and result follow the same behaviour as `send_request`.
     fn send_request_and_ignore_response<T>(
         &self,
         method: Method,
@@ -257,6 +255,7 @@ impl Client {
         }
     }
 
+    // @INTERNAL
     // Helper function for `send_request`. Not designed to be used independently.
     fn send_http_request<T>(
         &self,
