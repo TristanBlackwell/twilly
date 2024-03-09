@@ -48,7 +48,7 @@ pub fn choose_map_item_action(twilio: &Client, sync_service: &SyncService, map: 
                     .iter()
                     .map(|map_item| format!("{}", map_item.key))
                     .collect::<Vec<String>>(),
-                "Choose a Sync Map: ",
+                "Choose a Sync Map item: ",
             ) {
                 match action_choice {
                     ActionChoice::Back => {
@@ -95,7 +95,7 @@ pub fn choose_map_item_action(twilio: &Client, sync_service: &SyncService, map: 
                         sync_map_items.remove(selected_sync_map_index.expect(
                             "Could not find Sync Map item in existing Sync Map items list",
                         ));
-                        println!("Sync Map deleted.");
+                        println!("Sync Map item deleted.");
                         println!();
                         break;
                     }
