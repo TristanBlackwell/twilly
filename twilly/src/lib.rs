@@ -6,12 +6,12 @@ Coverage is partial yet provides an idiomatic usage pattern currently covering:
 - Accounts
 - Conversations
 
-This crate has been developed alongside the `twilly-cli` crate which provides an
+This crate has been developed alongside the `twilly-cli crate which provides an
 enhanced Twilio CLI experience.
 
 # Example
 
-Interaction is done via a Twilio client that can be created via a constructor. The config
+Interaction is done via a Twilio client that can be created via the constructor. The config
 parameter is a `TwilioConfig` struct of an account SID & auth token pair.
 
 ```
@@ -34,14 +34,16 @@ twilio.conversations().delete(&conversation_sid);
 
 pub mod account;
 pub mod conversation;
+pub mod sync;
 
-use std::fmt;
+use std::fmt::{self};
 
 use account::Accounts;
 use conversation::Conversations;
 use reqwest::{blocking::Response, Method};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
+use sync::Sync;
 
 /// Account SID & auth token pair required for
 /// authenticating requests to Twilio.
@@ -101,6 +103,8 @@ impl fmt::Display for TwilioError {
 /// A list of possible errors from the Twilio client.
 #[derive(Debug)]
 pub enum ErrorKind {
+    /// Validation error related to incoming arguments.
+    ValidationError(String),
     /// Network related error during the request.
     NetworkError(reqwest::Error),
     /// Twilio returned error
@@ -112,6 +116,9 @@ pub enum ErrorKind {
 impl ErrorKind {
     fn as_str(&self) -> String {
         match self {
+            ErrorKind::ValidationError(error) => {
+                format!("Validation error for provided arguments: {}", error)
+            }
             ErrorKind::NetworkError(error) => format!("Network error reaching Twilio: {}", &error),
             ErrorKind::ParsingError(error) => format!("Unable to parse response: {}", &error),
             ErrorKind::TwilioError(error) => {
@@ -144,11 +151,24 @@ impl fmt::Display for TwilioApiError {
     }
 }
 
+/// Holds the page information from the API.
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct PageMeta {
+    page: u16,
+    page_size: u16,
+    first_page_url: String,
+    previous_page_url: Option<String>,
+    next_page_url: Option<String>,
+    key: String,
+}
+
 /// Available Twilio resources to access.
 #[derive(Display, EnumIter, EnumString, PartialEq)]
 pub enum SubResource {
     Account,
     Conversations,
+    Sync,
 }
 
 impl Client {
@@ -163,12 +183,15 @@ impl Client {
 
     /// Dispatches a request to Twilio and handles parsing the response.
     ///
-    /// If the method allows for a request body then `params` sends this
-    /// as X-www-form-urlencoded otherwise `params` are attached as query
+    /// The function takes two generics `T` and `U`. `T` is the expected response
+    /// body and `U` is the parameters structre.
+    ///
+    /// If the method allows for a request body then `params` is sent as
+    /// x-www-form-urlencoded otherwise `params` are attached as query
     /// string parameters.
     ///
     /// Will return a result of either the resource type or one of the
-    /// possible errors ([`Error`]).
+    /// possible errors.
     fn send_request<T, U>(
         &self,
         method: Method,
@@ -203,12 +226,7 @@ impl Client {
     /// Dispatches a request to Twilio ignoring the response returned. This is generally
     /// for mutating where either the response is irrelevant or there is nothing returned.
     ///
-    /// If the method allows for a request body then `params` sends this
-    /// as X-www-form-urlencoded otherwise `params` are attached as query
-    /// string parameters.
-    ///
-    /// Will return a result of either the resource type or one of the
-    /// possible errors ([`Error`]).
+    /// Params and result follow the same behaviour as `send_request`.
     fn send_request_and_ignore_response<T>(
         &self,
         method: Method,
@@ -237,6 +255,7 @@ impl Client {
         }
     }
 
+    // @INTERNAL
     // Helper function for `send_request`. Not designed to be used independently.
     fn send_http_request<T>(
         &self,
@@ -274,6 +293,11 @@ impl Client {
     /// Conversation related functions.
     pub fn conversations<'a>(&'a self) -> Conversations {
         Conversations { client: self }
+    }
+
+    /// Sync related functions.
+    pub fn sync<'a>(&'a self) -> Sync {
+        Sync { client: self }
     }
 }
 

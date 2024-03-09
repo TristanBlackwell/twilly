@@ -54,16 +54,19 @@ impl fmt::Display for Account {
     }
 }
 
-/// Possible account statuses.
+/// Possible Account statuses.
 #[derive(
     AsRefStr, Clone, Display, Debug, EnumIter, EnumString, Serialize, Deserialize, PartialEq,
 )]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
+    /// A live account.
     #[strum(to_string = "Active")]
     Active,
+    /// The account has been temporarily suspended by it's parent.
     #[strum(to_string = "Suspended")]
     Suspended,
+    /// A closed account. This is permanent and cannot be re-opened.
     #[strum(to_string = "Closed")]
     Closed,
 }
@@ -119,8 +122,8 @@ impl<'a> Accounts<'a> {
 
     /// [Lists Accounts](https://www.twilio.com/docs/iam/api/account#read-multiple-account-resources)
     ///
-    /// This will list the account being used for the request and any sub-accounts that match
-    /// the provided criteria.
+    /// This will list all accounts that match the provided criteria.
+    /// This scans all subaccounts and can also include the account making the request.
     ///
     /// Accounts will be _eagerly_ paged until all retrieved.
     ///
@@ -177,6 +180,7 @@ impl<'a> Accounts<'a> {
     /// Care should be taken when creating sub-accounts.
     /// - Sub-accounts cannot create other sub-accounts
     /// - Trial accounts can only have a single sub-account beneath it.
+    ///
     /// See documentation for detail.
     pub fn create(&self, friendly_name: Option<&str>) -> Result<Account, TwilioError> {
         let params = CreateParams {
@@ -197,8 +201,11 @@ impl<'a> Accounts<'a> {
     /// [Updates an account resource](https://www.twilio.com/docs/iam/api/account#update-an-account-resource)
     /// under the authenticated Twilio account.
     ///
-    /// Takes the account SID of the account to update and an optional friendly name
-    /// and/or status
+    /// - `account_sid` -  the account SID of the account to update.
+    ///
+    /// Takes optional parameters:
+    /// - `friendly_name` - Update the friendly name to the provided value
+    /// - `status` - Change the account status
     pub fn update(
         &self,
         account_sid: &str,

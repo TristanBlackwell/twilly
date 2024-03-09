@@ -133,7 +133,7 @@ pub fn choose_account_action(twilio: &Client) {
                                             ActionChoice::Other(choice) => {
                                                 let account_position = accounts
                                                     .iter()
-                                                    .position(|conv| conv.sid == choice[1..35])
+                                                    .position(|account| account.sid == choice[1..35])
                                                     .expect("Could not find account in existing account list");
 
                                                 selected_account_index = Some(account_position);
