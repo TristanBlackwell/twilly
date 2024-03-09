@@ -21,3 +21,4 @@ chrono = "0.4.31"
 strum = "0.26.1"
 strum_macros = "0.26.1"
 confy = "0.6.0"
+openssl = { version = "0.10", features = ["vendored"] }
