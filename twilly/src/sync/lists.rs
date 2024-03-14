@@ -109,7 +109,7 @@ impl<'a, 'b> Lists<'a, 'b> {
             None,
         )?;
 
-        let mut results: Vec<SyncList> = lists_page.maps;
+        let mut results: Vec<SyncList> = lists_page.lists;
 
         while (lists_page.meta.next_page_url).is_some() {
             lists_page = self.client.send_request::<SyncListPage, ()>(
@@ -119,7 +119,7 @@ impl<'a, 'b> Lists<'a, 'b> {
                 None,
             )?;
 
-            results.append(&mut lists_page.maps);
+            results.append(&mut lists_page.lists);
         }
 
         Ok(results)
@@ -193,21 +193,21 @@ impl<'a, 'b> List<'a, 'b> {
     /// Functions relating to a known Sync List Item.
     ///
     /// Takes in the key of the Sync List Item to perform actions against.
-    pub fn listitem(&'a self, key: &'b str) -> MapItem {
-        MapItem {
+    pub fn listitem(&'a self, index: &'b u32) -> ListItem {
+        ListItem {
             client: self.client,
             service_sid: self.service_sid,
-            map_sid: self.sid,
-            key,
+            list_sid: self.sid,
+            index,
         }
     }
 
     /// General Sync Map Item functions.
-    pub fn listitems(&'a self) -> MapItems {
-        MapItems {
+    pub fn listitems(&'a self) -> ListItems {
+        ListItems {
             client: self.client,
             service_sid: self.service_sid,
-            map_sid: self.sid,
+            list_sid: self.sid,
         }
     }
 }

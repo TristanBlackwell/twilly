@@ -5,7 +5,7 @@ Contains Twilio Sync List Item related functionality.
 */
 
 use crate::{Client, PageMeta, TwilioError};
-use reqwest::Method;
+use reqwest::{header::HeaderMap, Method};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::skip_serializing_none;
@@ -180,10 +180,10 @@ impl<'a, 'b> ListItem<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument, the List provided to the `list()`
     /// argument and updates the item with the index provided to `listitem()` with the parameters.
     pub fn update(&self, params: UpdateParams) -> Result<SyncListItem, TwilioError> {
-        let headers = HeaderMap::new();
+        let mut headers = HeaderMap::new();
 
-        if let Some(if_match) = params.if_match {
-            headers.append("If-Match", if_match);
+        if let Some(if_match) = params.if_match.clone() {
+            headers.append("If-Match", if_match.parse().unwrap());
         }
 
         let list_item = self.client.send_request::<SyncListItem, UpdateParams>(
