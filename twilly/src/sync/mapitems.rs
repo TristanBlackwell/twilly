@@ -5,7 +5,7 @@ Contains Twilio Sync Map Item related functionality.
 */
 
 use crate::{Client, PageMeta, TwilioError};
-use reqwest::Method;
+use reqwest::{header::HeaderMap, Method};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::skip_serializing_none;
@@ -181,10 +181,10 @@ impl<'a, 'b> MapItem<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and updates the item with the key provided to `mapitem()` with the parameters.
     pub fn update(&self, params: UpdateParams) -> Result<SyncMapItem, TwilioError> {
-        let headers = HeaderMap::new();
+        let mut headers = HeaderMap::new();
 
-        if let Some(if_match) = params.if_match {
-            headers.append("If-Match", if_match);
+        if let Some(if_match) = params.if_match.clone() {
+            headers.append("If-Match", if_match.parse().unwrap());
         }
 
         let map_item = self.client.send_request::<SyncMapItem, UpdateParams>(

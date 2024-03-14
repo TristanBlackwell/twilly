@@ -274,14 +274,14 @@ impl Client {
                 .client
                 .request(method, url)
                 .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
-                .headers(headers)
+                .headers(headers.unwrap_or_default())
                 .query(&params)
                 .send(),
             _ => self
                 .client
                 .request(method, url)
                 .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
-                .headers(headers)
+                .headers(headers.unwrap_or_default())
                 .form(&params)
                 .send(),
         }
