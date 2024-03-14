@@ -161,10 +161,10 @@ impl<'a, 'b> Document<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument and updates the Document
     /// provided to the `document()` argument.
     pub fn update(&self, params: UpdateParams) -> Result<SyncDocument, TwilioError> {
-        let headers = HeaderMap::new();
+        let mut headers = HeaderMap::new();
 
-        if let Some(if_match) = params.if_match {
-            headers.append("If-Match", if_match);
+        if let Some(if_match) = params.if_match.clone() {
+            headers.append("If-Match", if_match.parse().unwrap());
         }
 
         let document = self.client.send_request::<SyncDocument, UpdateParams>(
@@ -174,7 +174,7 @@ impl<'a, 'b> Document<'a, 'b> {
                 self.service_sid, self.sid
             ),
             Some(&params),
-            Some(&headers),
+            Some(headers),
         );
 
         document
