@@ -4,6 +4,8 @@ Contains Twilio Sync related functionality.
 
 */
 pub mod documents;
+pub mod listitems;
+pub mod lists;
 pub mod mapitems;
 pub mod maps;
 pub mod services;

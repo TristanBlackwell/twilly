@@ -205,7 +205,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and deletes the item with the key provided to `mapitem()`.
     pub fn delete(&self) -> Result<(), TwilioError> {
-        let service = self.client.send_request_and_ignore_response::<()>(
+        let map_item = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,
             &format!(
                 "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",
@@ -215,6 +215,6 @@ impl<'a, 'b> MapItem<'a, 'b> {
             None,
         );
 
-        service
+        map_item
     }
 }
