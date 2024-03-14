@@ -40,7 +40,7 @@ use std::fmt::{self};
 
 use account::Accounts;
 use conversation::Conversations;
-use reqwest::{blocking::Response, Method};
+use reqwest::{blocking::Response, header::HeaderMap, Method};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 use sync::Sync;
@@ -197,12 +197,13 @@ impl Client {
         method: Method,
         url: &str,
         params: Option<&U>,
+        headers: Option<HeaderMap>,
     ) -> Result<T, TwilioError>
     where
         T: serde::de::DeserializeOwned,
         U: Serialize + ?Sized,
     {
-        let response = self.send_http_request(method, url, params)?;
+        let response = self.send_http_request(method, url, params, headers)?;
 
         match response.status().is_success() {
             true => response.json::<T>().map_err(|error| TwilioError {
@@ -232,11 +233,12 @@ impl Client {
         method: Method,
         url: &str,
         params: Option<&T>,
+        headers: Option<HeaderMap>,
     ) -> Result<(), TwilioError>
     where
         T: Serialize + ?Sized,
     {
-        let response = self.send_http_request(method, url, params)?;
+        let response = self.send_http_request(method, url, params, headers)?;
 
         match response.status().is_success() {
             true => Ok(()),
@@ -262,6 +264,7 @@ impl Client {
         method: Method,
         url: &str,
         params: Option<&T>,
+        headers: Option<HeaderMap>,
     ) -> Result<Response, TwilioError>
     where
         T: Serialize + ?Sized,
@@ -271,12 +274,14 @@ impl Client {
                 .client
                 .request(method, url)
                 .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+                .headers(headers)
                 .query(&params)
                 .send(),
             _ => self
                 .client
                 .request(method, url)
                 .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+                .headers(headers)
                 .form(&params)
                 .send(),
         }

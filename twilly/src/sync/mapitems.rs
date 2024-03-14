@@ -107,6 +107,7 @@ impl<'a, 'b> MapItems<'a, 'b> {
                 self.service_sid, self.map_sid
             ),
             Some(&params),
+            None,
         );
 
         map_item
@@ -128,6 +129,7 @@ impl<'a, 'b> MapItems<'a, 'b> {
                 self.service_sid, self.map_sid
             ),
             Some(&params),
+            None,
         )?;
 
         let mut results: Vec<SyncMapItem> = map_items_page.items;
@@ -136,6 +138,7 @@ impl<'a, 'b> MapItems<'a, 'b> {
             map_items_page = self.client.send_request::<MapItemPage, ListParams>(
                 Method::GET,
                 &map_items_page.meta.next_page_url.unwrap(),
+                None,
                 None,
             )?;
 
@@ -167,6 +170,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
                 self.service_sid, self.map_sid, self.key
             ),
             None,
+            None,
         );
 
         map_item
@@ -177,6 +181,12 @@ impl<'a, 'b> MapItem<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and updates the item with the key provided to `mapitem()` with the parameters.
     pub fn update(&self, params: UpdateParams) -> Result<SyncMapItem, TwilioError> {
+        let headers = HeaderMap::new();
+
+        if let Some(if_match) = params.if_match {
+            headers.append("If-Match", if_match);
+        }
+
         let map_item = self.client.send_request::<SyncMapItem, UpdateParams>(
             Method::POST,
             &format!(
@@ -184,6 +194,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
                 self.service_sid, self.map_sid, self.key
             ),
             Some(&params),
+            Some(headers),
         );
 
         map_item
@@ -200,6 +211,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
                 "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",
                 self.service_sid, self.map_sid, self.key
             ),
+            None,
             None,
         );
 
