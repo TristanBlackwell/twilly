@@ -1,4 +1,6 @@
 mod documents;
+mod listitems;
+mod lists;
 mod mapitems;
 mod maps;
 
@@ -16,6 +18,8 @@ pub enum Action {
     Document,
     #[strum(to_string = "Maps")]
     Map,
+    #[strum(to_string = "Lists")]
+    List,
     #[strum(to_string = "List Details")]
     ListDetails,
     Delete,
@@ -120,6 +124,7 @@ pub fn choose_sync_resource(twilio: &Client) {
                     documents::choose_document_action(&twilio, selected_sync_service)
                 }
                 Action::Map => maps::choose_map_action(&twilio, selected_sync_service),
+                Action::List => lists::choose_list_action(&twilio, selected_sync_service),
                 Action::ListDetails => {
                     println!("{:#?}", selected_sync_service);
                     println!()

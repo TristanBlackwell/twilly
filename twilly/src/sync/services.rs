@@ -11,6 +11,7 @@ use serde_with::skip_serializing_none;
 
 use super::{
     documents::{Document, Documents},
+    lists::{List, Lists},
     maps::{Map, Maps},
 };
 
@@ -238,6 +239,25 @@ impl<'a, 'b> Service<'a, 'b> {
         Maps {
             client: self.client,
             service_sid: self.sid,
+        }
+    }
+
+    /// General Sync List functions.
+    pub fn lists(&'a self) -> Lists {
+        Lists {
+            client: self.client,
+            service_sid: self.sid,
+        }
+    }
+
+    /// Functions relating to a known Sync List.
+    ///
+    /// Takes in the SID of the Sync List to perform actions against.
+    pub fn list(&'a self, sid: &'b str) -> List {
+        List {
+            client: self.client,
+            service_sid: self.sid,
+            sid,
         }
     }
 }
