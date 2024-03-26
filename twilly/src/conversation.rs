@@ -150,6 +150,7 @@ impl<'a> Conversations<'a> {
             Method::GET,
             &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
             None,
+            None,
         );
 
         conversation
@@ -187,6 +188,7 @@ impl<'a> Conversations<'a> {
             Method::GET,
             "https://conversations.twilio.com/v1/Conversations",
             Some(&params),
+            None,
         )?;
 
         let mut results: Vec<Conversation> = conversations_page.conversations;
@@ -195,6 +197,7 @@ impl<'a> Conversations<'a> {
             conversations_page = self.client.send_request::<ConversationPage, ()>(
                 Method::GET,
                 &conversations_page.meta.next_page_url.unwrap(),
+                None,
                 None,
             )?;
 
@@ -219,6 +222,7 @@ impl<'a> Conversations<'a> {
                 Method::POST,
                 &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
                 Some(&updates),
+                None,
             );
 
         conversation
@@ -231,6 +235,7 @@ impl<'a> Conversations<'a> {
         let conversation = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,
             &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
+            None,
             None,
         );
 

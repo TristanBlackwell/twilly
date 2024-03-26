@@ -11,6 +11,7 @@ use serde_with::skip_serializing_none;
 
 use super::{
     documents::{Document, Documents},
+    lists::{List, Lists},
     maps::{Map, Maps},
 };
 
@@ -106,6 +107,7 @@ impl<'a> Services<'a> {
                 Method::POST,
                 "https://sync.twilio.com/v1/Services",
                 Some(&params),
+                None,
             );
 
         service
@@ -121,6 +123,7 @@ impl<'a> Services<'a> {
             Method::GET,
             "https://sync.twilio.com/v1/Services?PageSize=20",
             None,
+            None,
         )?;
 
         let mut results: Vec<SyncService> = services_page.services;
@@ -129,6 +132,7 @@ impl<'a> Services<'a> {
             services_page = self.client.send_request::<SyncServicePage, ()>(
                 Method::GET,
                 &services_page.meta.next_page_url.unwrap(),
+                None,
                 None,
             )?;
 
@@ -152,6 +156,7 @@ impl<'a, 'b> Service<'a, 'b> {
         let service = self.client.send_request::<SyncService, ()>(
             Method::GET,
             &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
+            None,
             None,
         );
 
@@ -178,6 +183,7 @@ impl<'a, 'b> Service<'a, 'b> {
                 Method::POST,
                 &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
                 Some(&params),
+                None,
             );
 
         service
@@ -191,6 +197,7 @@ impl<'a, 'b> Service<'a, 'b> {
         let service = self.client.send_request_and_ignore_response::<()>(
             Method::DELETE,
             &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
+            None,
             None,
         );
 
@@ -232,6 +239,25 @@ impl<'a, 'b> Service<'a, 'b> {
         Maps {
             client: self.client,
             service_sid: self.sid,
+        }
+    }
+
+    /// General Sync List functions.
+    pub fn lists(&'a self) -> Lists {
+        Lists {
+            client: self.client,
+            service_sid: self.sid,
+        }
+    }
+
+    /// Functions relating to a known Sync List.
+    ///
+    /// Takes in the SID of the Sync List to perform actions against.
+    pub fn list(&'a self, sid: &'b str) -> List {
+        List {
+            client: self.client,
+            service_sid: self.sid,
+            sid,
         }
     }
 }

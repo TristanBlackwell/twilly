@@ -5,7 +5,7 @@ Contains Twilio Sync Document related functionality.
 */
 
 use crate::{Client, PageMeta, TwilioError};
-use reqwest::Method;
+use reqwest::{header::HeaderMap, Method};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::skip_serializing_none;
@@ -91,6 +91,7 @@ impl<'a, 'b> Documents<'a, 'b> {
                 self.service_sid
             ),
             Some(&params),
+            None,
         );
 
         document
@@ -109,6 +110,7 @@ impl<'a, 'b> Documents<'a, 'b> {
                 self.service_sid
             ),
             None,
+            None,
         )?;
 
         let mut results: Vec<SyncDocument> = documents_page.documents;
@@ -117,6 +119,7 @@ impl<'a, 'b> Documents<'a, 'b> {
             documents_page = self.client.send_request::<DocumentPage, ()>(
                 Method::GET,
                 &documents_page.meta.next_page_url.unwrap(),
+                None,
                 None,
             )?;
 
@@ -147,6 +150,7 @@ impl<'a, 'b> Document<'a, 'b> {
                 self.service_sid, self.sid
             ),
             None,
+            None,
         );
 
         document
@@ -157,6 +161,12 @@ impl<'a, 'b> Document<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument and updates the Document
     /// provided to the `document()` argument.
     pub fn update(&self, params: UpdateParams) -> Result<SyncDocument, TwilioError> {
+        let mut headers = HeaderMap::new();
+
+        if let Some(if_match) = params.if_match.clone() {
+            headers.append("If-Match", if_match.parse().unwrap());
+        }
+
         let document = self.client.send_request::<SyncDocument, UpdateParams>(
             Method::POST,
             &format!(
@@ -164,6 +174,7 @@ impl<'a, 'b> Document<'a, 'b> {
                 self.service_sid, self.sid
             ),
             Some(&params),
+            Some(headers),
         );
 
         document
@@ -180,6 +191,7 @@ impl<'a, 'b> Document<'a, 'b> {
                 "https://sync.twilio.com/v1/Services/{}/Documents/{}",
                 self.service_sid, self.sid
             ),
+            None,
             None,
         );
 

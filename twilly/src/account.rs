@@ -115,6 +115,7 @@ impl<'a> Accounts<'a> {
                 sid.unwrap_or_else(|| &self.client.config.account_sid)
             ),
             None,
+            None,
         );
 
         account
@@ -154,6 +155,7 @@ impl<'a> Accounts<'a> {
                 Method::GET,
                 "https://api.twilio.com/2010-04-01/Accounts.json?PageSize=5",
                 Some(&params),
+                None,
             )?;
 
         let mut results: Vec<Account> = accounts_page.accounts;
@@ -165,7 +167,7 @@ impl<'a> Accounts<'a> {
             );
             accounts_page =
                 self.client
-                    .send_request::<AccountPage, ()>(Method::GET, &full_url, None)?;
+                    .send_request::<AccountPage, ()>(Method::GET, &full_url, None, None)?;
 
             results.append(&mut accounts_page.accounts);
         }
@@ -195,6 +197,7 @@ impl<'a> Accounts<'a> {
             Method::POST,
             "https://api.twilio.com/2010-04-01/Accounts.json",
             Some(&params),
+            None,
         )
     }
 
@@ -232,6 +235,7 @@ impl<'a> Accounts<'a> {
                 account_sid
             ),
             Some(&opts),
+            None,
         )
     }
 }

@@ -87,6 +87,7 @@ impl<'a, 'b> Maps<'a, 'b> {
                 &self.service_sid
             ),
             Some(&params),
+            None,
         );
 
         map
@@ -105,6 +106,7 @@ impl<'a, 'b> Maps<'a, 'b> {
                 self.service_sid
             ),
             None,
+            None,
         )?;
 
         let mut results: Vec<SyncMap> = maps_page.maps;
@@ -113,6 +115,7 @@ impl<'a, 'b> Maps<'a, 'b> {
             maps_page = self.client.send_request::<SyncMapPage, ()>(
                 Method::GET,
                 &maps_page.meta.next_page_url.unwrap(),
+                None,
                 None,
             )?;
 
@@ -143,6 +146,7 @@ impl<'a, 'b> Map<'a, 'b> {
                 self.service_sid, self.sid
             ),
             None,
+            None,
         );
 
         map
@@ -160,6 +164,7 @@ impl<'a, 'b> Map<'a, 'b> {
                 self.service_sid, self.sid
             ),
             Some(&params),
+            None,
         );
 
         map
@@ -178,6 +183,7 @@ impl<'a, 'b> Map<'a, 'b> {
                 "https://sync.twilio.com/v1/Services/{}/Maps/{}",
                 self.service_sid, self.sid
             ),
+            None,
             None,
         );
 
