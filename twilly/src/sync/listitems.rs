@@ -124,7 +124,7 @@ impl<'a, 'b> ListItems<'a, 'b> {
         let mut list_items_page = self.client.send_request::<ListItemPage, ListParams>(
             Method::GET,
             &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items?PageSize=50",
+                "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items?PageSize=50",
                 self.service_sid, self.list_sid
             ),
             Some(&params),
