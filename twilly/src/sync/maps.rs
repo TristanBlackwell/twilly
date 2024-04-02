@@ -79,16 +79,19 @@ impl<'a, 'b> Maps<'a, 'b> {
     /// [Creates a Sync Map resource](https://www.twilio.com/docs/sync/api/map-resource#create-a-syncmap-resource)
     ///
     /// Creates a Sync Map resource with the provided parameters.
-    pub fn create(&self, params: CreateParams) -> Result<SyncMap, TwilioError> {
-        let map = self.client.send_request::<SyncMap, CreateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps",
-                &self.service_sid
-            ),
-            Some(&params),
-            None,
-        );
+    pub async fn create(&self, params: CreateParams) -> Result<SyncMap, TwilioError> {
+        let map = self
+            .client
+            .send_request::<SyncMap, CreateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps",
+                    &self.service_sid
+                ),
+                Some(&params),
+                None,
+            )
+            .await;
 
         map
     }
@@ -98,26 +101,32 @@ impl<'a, 'b> Maps<'a, 'b> {
     /// Lists Sync Maps existing on the Twilio account.
     ///
     /// Maps will be _eagerly_ paged until all retrieved.
-    pub fn list(&self) -> Result<Vec<SyncMap>, TwilioError> {
-        let mut maps_page = self.client.send_request::<SyncMapPage, ()>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps?PageSize=20",
-                self.service_sid
-            ),
-            None,
-            None,
-        )?;
+    pub async fn list(&self) -> Result<Vec<SyncMap>, TwilioError> {
+        let mut maps_page = self
+            .client
+            .send_request::<SyncMapPage, ()>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps?PageSize=20",
+                    self.service_sid
+                ),
+                None,
+                None,
+            )
+            .await?;
 
         let mut results: Vec<SyncMap> = maps_page.maps;
 
         while (maps_page.meta.next_page_url).is_some() {
-            maps_page = self.client.send_request::<SyncMapPage, ()>(
-                Method::GET,
-                &maps_page.meta.next_page_url.unwrap(),
-                None,
-                None,
-            )?;
+            maps_page = self
+                .client
+                .send_request::<SyncMapPage, ()>(
+                    Method::GET,
+                    &maps_page.meta.next_page_url.unwrap(),
+                    None,
+                    None,
+                )
+                .await?;
 
             results.append(&mut maps_page.maps);
         }
@@ -138,16 +147,19 @@ impl<'a, 'b> Map<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument and fetches the Map
     /// provided to the `map()` argument.
-    pub fn get(&self) -> Result<SyncMap, TwilioError> {
-        let map = self.client.send_request::<SyncMap, ()>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps/{}",
-                self.service_sid, self.sid
-            ),
-            None,
-            None,
-        );
+    pub async fn get(&self) -> Result<SyncMap, TwilioError> {
+        let map = self
+            .client
+            .send_request::<SyncMap, ()>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps/{}",
+                    self.service_sid, self.sid
+                ),
+                None,
+                None,
+            )
+            .await;
 
         map
     }
@@ -156,16 +168,19 @@ impl<'a, 'b> Map<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument  and updates the Map
     /// provided to the `map()` argument.
-    pub fn update(&self, params: UpdateParams) -> Result<SyncMap, TwilioError> {
-        let map = self.client.send_request::<SyncMap, UpdateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps/{}",
-                self.service_sid, self.sid
-            ),
-            Some(&params),
-            None,
-        );
+    pub async fn update(&self, params: UpdateParams) -> Result<SyncMap, TwilioError> {
+        let map = self
+            .client
+            .send_request::<SyncMap, UpdateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps/{}",
+                    self.service_sid, self.sid
+                ),
+                Some(&params),
+                None,
+            )
+            .await;
 
         map
     }
@@ -176,16 +191,19 @@ impl<'a, 'b> Map<'a, 'b> {
     /// provided to the `map()` argument.
     ///
     /// This will delete any Sync Map items underneath this map.
-    pub fn delete(&self) -> Result<(), TwilioError> {
-        let map = self.client.send_request_and_ignore_response::<()>(
-            Method::DELETE,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps/{}",
-                self.service_sid, self.sid
-            ),
-            None,
-            None,
-        );
+    pub async fn delete(&self) -> Result<(), TwilioError> {
+        let map = self
+            .client
+            .send_request_and_ignore_response::<()>(
+                Method::DELETE,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps/{}",
+                    self.service_sid, self.sid
+                ),
+                None,
+                None,
+            )
+            .await;
 
         map
     }

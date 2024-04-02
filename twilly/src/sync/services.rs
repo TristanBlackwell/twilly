@@ -91,7 +91,7 @@ impl<'a> Services<'a> {
     /// [Creates a Sync Service](https://www.twilio.com/docs/sync/api/service#create-a-service-resource)
     ///
     /// Creates a Sync Service resource with the provided parameters.
-    pub fn create(&self, params: CreateOrUpdateParams) -> Result<SyncService, TwilioError> {
+    pub async fn create(&self, params: CreateOrUpdateParams) -> Result<SyncService, TwilioError> {
         if let Some(reachability_debouncing_window) = params.reachability_debouncing_window {
             let validation =
                 validate_reachability_debouncing_window(reachability_debouncing_window);
@@ -108,7 +108,8 @@ impl<'a> Services<'a> {
                 "https://sync.twilio.com/v1/Services",
                 Some(&params),
                 None,
-            );
+            )
+            .await;
 
         service
     }
@@ -118,23 +119,29 @@ impl<'a> Services<'a> {
     /// List Sync Services existing on the Twilio account.
     ///
     /// Services will be _eagerly_ paged until all retrieved.
-    pub fn list(&self) -> Result<Vec<SyncService>, TwilioError> {
-        let mut services_page = self.client.send_request::<SyncServicePage, ()>(
-            Method::GET,
-            "https://sync.twilio.com/v1/Services?PageSize=20",
-            None,
-            None,
-        )?;
+    pub async fn list(&self) -> Result<Vec<SyncService>, TwilioError> {
+        let mut services_page = self
+            .client
+            .send_request::<SyncServicePage, ()>(
+                Method::GET,
+                "https://sync.twilio.com/v1/Services?PageSize=20",
+                None,
+                None,
+            )
+            .await?;
 
         let mut results: Vec<SyncService> = services_page.services;
 
         while (services_page.meta.next_page_url).is_some() {
-            services_page = self.client.send_request::<SyncServicePage, ()>(
-                Method::GET,
-                &services_page.meta.next_page_url.unwrap(),
-                None,
-                None,
-            )?;
+            services_page = self
+                .client
+                .send_request::<SyncServicePage, ()>(
+                    Method::GET,
+                    &services_page.meta.next_page_url.unwrap(),
+                    None,
+                    None,
+                )
+                .await?;
 
             results.append(&mut services_page.services);
         }
@@ -152,13 +159,16 @@ impl<'a, 'b> Service<'a, 'b> {
     /// [Gets a Sync Service](https://www.twilio.com/docs/sync/api/service#fetch-a-service-resource)
     ///
     /// Fetches the Sync Service provided to the `Service()`.
-    pub fn get(&self) -> Result<SyncService, TwilioError> {
-        let service = self.client.send_request::<SyncService, ()>(
-            Method::GET,
-            &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
-            None,
-            None,
-        );
+    pub async fn get(&self) -> Result<SyncService, TwilioError> {
+        let service = self
+            .client
+            .send_request::<SyncService, ()>(
+                Method::GET,
+                &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
+                None,
+                None,
+            )
+            .await;
 
         service
     }
@@ -167,7 +177,7 @@ impl<'a, 'b> Service<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `Service()` argument and updates the resource with
     /// the provided properties
-    pub fn update(&self, params: CreateOrUpdateParams) -> Result<SyncService, TwilioError> {
+    pub async fn update(&self, params: CreateOrUpdateParams) -> Result<SyncService, TwilioError> {
         if let Some(reachability_debouncing_window) = params.reachability_debouncing_window {
             let validation =
                 validate_reachability_debouncing_window(reachability_debouncing_window);
@@ -184,7 +194,8 @@ impl<'a, 'b> Service<'a, 'b> {
                 &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
                 Some(&params),
                 None,
-            );
+            )
+            .await;
 
         service
     }
@@ -193,13 +204,16 @@ impl<'a, 'b> Service<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `Service()` argument and deletes the resource.
     /// **Use with caution. All sub resources (documents, maps, ...) will also be removed.**
-    pub fn delete(&self) -> Result<(), TwilioError> {
-        let service = self.client.send_request_and_ignore_response::<()>(
-            Method::DELETE,
-            &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
-            None,
-            None,
-        );
+    pub async fn delete(&self) -> Result<(), TwilioError> {
+        let service = self
+            .client
+            .send_request_and_ignore_response::<()>(
+                Method::DELETE,
+                &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
+                None,
+                None,
+            )
+            .await;
 
         service
     }

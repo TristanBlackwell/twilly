@@ -83,16 +83,19 @@ impl<'a, 'b> Documents<'a, 'b> {
     /// [Creates a Sync Document](https://www.twilio.com/docs/sync/api/document-resource)
     ///
     /// Creates a Sync Document with the provided parameters.
-    pub fn create(&self, params: CreateParams) -> Result<SyncDocument, TwilioError> {
-        let document = self.client.send_request::<SyncDocument, CreateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Documents",
-                self.service_sid
-            ),
-            Some(&params),
-            None,
-        );
+    pub async fn create(&self, params: CreateParams) -> Result<SyncDocument, TwilioError> {
+        let document = self
+            .client
+            .send_request::<SyncDocument, CreateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Documents",
+                    self.service_sid
+                ),
+                Some(&params),
+                None,
+            )
+            .await;
 
         document
     }
@@ -102,26 +105,32 @@ impl<'a, 'b> Documents<'a, 'b> {
     /// Lists Sync Documents in the Sync Service provided to the `service()`.
     ///
     /// Documents will be _eagerly_ paged until all retrieved.
-    pub fn list(&self) -> Result<Vec<SyncDocument>, TwilioError> {
-        let mut documents_page = self.client.send_request::<DocumentPage, ()>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Documents?PageSize=50",
-                self.service_sid
-            ),
-            None,
-            None,
-        )?;
+    pub async fn list(&self) -> Result<Vec<SyncDocument>, TwilioError> {
+        let mut documents_page = self
+            .client
+            .send_request::<DocumentPage, ()>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Documents?PageSize=50",
+                    self.service_sid
+                ),
+                None,
+                None,
+            )
+            .await?;
 
         let mut results: Vec<SyncDocument> = documents_page.documents;
 
         while (documents_page.meta.next_page_url).is_some() {
-            documents_page = self.client.send_request::<DocumentPage, ()>(
-                Method::GET,
-                &documents_page.meta.next_page_url.unwrap(),
-                None,
-                None,
-            )?;
+            documents_page = self
+                .client
+                .send_request::<DocumentPage, ()>(
+                    Method::GET,
+                    &documents_page.meta.next_page_url.unwrap(),
+                    None,
+                    None,
+                )
+                .await?;
 
             results.append(&mut documents_page.documents);
         }
@@ -142,16 +151,19 @@ impl<'a, 'b> Document<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument and fetches the Document
     /// provided to the `document()` argument.
-    pub fn get(&self) -> Result<SyncDocument, TwilioError> {
-        let document = self.client.send_request::<SyncDocument, ()>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Documents/{}",
-                self.service_sid, self.sid
-            ),
-            None,
-            None,
-        );
+    pub async fn get(&self) -> Result<SyncDocument, TwilioError> {
+        let document = self
+            .client
+            .send_request::<SyncDocument, ()>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Documents/{}",
+                    self.service_sid, self.sid
+                ),
+                None,
+                None,
+            )
+            .await;
 
         document
     }
@@ -160,22 +172,25 @@ impl<'a, 'b> Document<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument and updates the Document
     /// provided to the `document()` argument.
-    pub fn update(&self, params: UpdateParams) -> Result<SyncDocument, TwilioError> {
+    pub async fn update(&self, params: UpdateParams) -> Result<SyncDocument, TwilioError> {
         let mut headers = HeaderMap::new();
 
         if let Some(if_match) = params.if_match.clone() {
             headers.append("If-Match", if_match.parse().unwrap());
         }
 
-        let document = self.client.send_request::<SyncDocument, UpdateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Documents/{}",
-                self.service_sid, self.sid
-            ),
-            Some(&params),
-            Some(headers),
-        );
+        let document = self
+            .client
+            .send_request::<SyncDocument, UpdateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Documents/{}",
+                    self.service_sid, self.sid
+                ),
+                Some(&params),
+                Some(headers),
+            )
+            .await;
 
         document
     }
@@ -184,16 +199,19 @@ impl<'a, 'b> Document<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument and deletes the Document
     /// provided to the `document()` argument.
-    pub fn delete(&self) -> Result<(), TwilioError> {
-        let service = self.client.send_request_and_ignore_response::<()>(
-            Method::DELETE,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Documents/{}",
-                self.service_sid, self.sid
-            ),
-            None,
-            None,
-        );
+    pub async fn delete(&self) -> Result<(), TwilioError> {
+        let service = self
+            .client
+            .send_request_and_ignore_response::<()>(
+                Method::DELETE,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Documents/{}",
+                    self.service_sid, self.sid
+                ),
+                None,
+                None,
+            )
+            .await;
 
         service
     }

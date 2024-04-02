@@ -107,16 +107,19 @@ impl<'a> Accounts<'a> {
     ///
     /// Takes in an optional `sid` argument otherwise will default to the current config
     /// account SID.
-    pub fn get(&self, sid: Option<&str>) -> Result<Account, TwilioError> {
-        let account = self.client.send_request::<Account, ()>(
-            Method::GET,
-            &format!(
-                "https://api.twilio.com/2010-04-01/Accounts/{}.json",
-                sid.unwrap_or_else(|| &self.client.config.account_sid)
-            ),
-            None,
-            None,
-        );
+    pub async fn get(&self, sid: Option<&str>) -> Result<Account, TwilioError> {
+        let account = self
+            .client
+            .send_request::<Account, ()>(
+                Method::GET,
+                &format!(
+                    "https://api.twilio.com/2010-04-01/Accounts/{}.json",
+                    sid.unwrap_or_else(|| &self.client.config.account_sid)
+                ),
+                None,
+                None,
+            )
+            .await;
 
         account
     }
@@ -131,7 +134,7 @@ impl<'a> Accounts<'a> {
     /// Takes optional parameters:
     /// - `friendly_name` - Return only accounts matching this friendly name
     /// - `status` - Return only accounts that match this status
-    pub fn list(
+    pub async fn list(
         &self,
         friendly_name: Option<&str>,
         status: Option<&Status>,
@@ -156,7 +159,8 @@ impl<'a> Accounts<'a> {
                 "https://api.twilio.com/2010-04-01/Accounts.json?PageSize=5",
                 Some(&params),
                 None,
-            )?;
+            )
+            .await?;
 
         let mut results: Vec<Account> = accounts_page.accounts;
 
@@ -165,9 +169,10 @@ impl<'a> Accounts<'a> {
                 "https://api.twilio.com{}",
                 accounts_page.next_page_uri.unwrap()
             );
-            accounts_page =
-                self.client
-                    .send_request::<AccountPage, ()>(Method::GET, &full_url, None, None)?;
+            accounts_page = self
+                .client
+                .send_request::<AccountPage, ()>(Method::GET, &full_url, None, None)
+                .await?;
 
             results.append(&mut accounts_page.accounts);
         }
@@ -184,7 +189,7 @@ impl<'a> Accounts<'a> {
     /// - Trial accounts can only have a single sub-account beneath it.
     ///
     /// See documentation for detail.
-    pub fn create(&self, friendly_name: Option<&str>) -> Result<Account, TwilioError> {
+    pub async fn create(&self, friendly_name: Option<&str>) -> Result<Account, TwilioError> {
         let params = CreateParams {
             friendly_name: if let Some(friendly_name) = friendly_name {
                 Some(friendly_name.to_string())
@@ -193,12 +198,14 @@ impl<'a> Accounts<'a> {
             },
         };
 
-        self.client.send_request::<Account, CreateParams>(
-            Method::POST,
-            "https://api.twilio.com/2010-04-01/Accounts.json",
-            Some(&params),
-            None,
-        )
+        self.client
+            .send_request::<Account, CreateParams>(
+                Method::POST,
+                "https://api.twilio.com/2010-04-01/Accounts.json",
+                Some(&params),
+                None,
+            )
+            .await
     }
 
     /// [Updates an account resource](https://www.twilio.com/docs/iam/api/account#update-an-account-resource)
@@ -209,7 +216,7 @@ impl<'a> Accounts<'a> {
     /// Takes optional parameters:
     /// - `friendly_name` - Update the friendly name to the provided value
     /// - `status` - Change the account status
-    pub fn update(
+    pub async fn update(
         &self,
         account_sid: &str,
         friendly_name: Option<&str>,
@@ -228,14 +235,16 @@ impl<'a> Accounts<'a> {
             },
         };
 
-        self.client.send_request::<Account, ListOrUpdateParams>(
-            Method::POST,
-            &format!(
-                "https://api.twilio.com/2010-04-01/Accounts/{}.json",
-                account_sid
-            ),
-            Some(&opts),
-            None,
-        )
+        self.client
+            .send_request::<Account, ListOrUpdateParams>(
+                Method::POST,
+                &format!(
+                    "https://api.twilio.com/2010-04-01/Accounts/{}.json",
+                    account_sid
+                ),
+                Some(&opts),
+                None,
+            )
+            .await
     }
 }
