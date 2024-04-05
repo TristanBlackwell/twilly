@@ -19,12 +19,13 @@ pub enum Action {
     Exit,
 }
 
-pub fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
+pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
     let mut sync_maps = twilio
         .sync()
         .service(&sync_service.sid)
         .maps()
         .list()
+        .await
         .unwrap_or_else(|error| panic!("{}", error));
 
     if sync_maps.len() == 0 {
@@ -72,6 +73,7 @@ pub fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
             match resource {
                 Action::MapItem => {
                     mapitems::choose_map_item_action(&twilio, sync_service, &selected_sync_map)
+                        .await
                 }
 
                 Action::ListDetails => {
@@ -89,6 +91,7 @@ pub fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                             .service(&sync_service.sid)
                             .map(&selected_sync_map.sid)
                             .delete()
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         sync_maps.remove(
                             selected_sync_map_index

@@ -22,3 +22,4 @@ strum = "0.26.1"
 strum_macros = "0.26.1"
 confy = "0.6.0"
 openssl = { version = "0.10", features = ["vendored"] }
+tokio = { version = "1.37.0", features = ["macros", "time"] }

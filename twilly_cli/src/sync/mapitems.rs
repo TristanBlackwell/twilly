@@ -18,7 +18,7 @@ pub enum Action {
     Exit,
 }
 
-pub fn choose_map_item_action(twilio: &Client, sync_service: &SyncService, map: &SyncMap) {
+pub async fn choose_map_item_action(twilio: &Client, sync_service: &SyncService, map: &SyncMap) {
     let mut sync_map_items = twilio
         .sync()
         .service(&sync_service.sid)
@@ -29,6 +29,7 @@ pub fn choose_map_item_action(twilio: &Client, sync_service: &SyncService, map: 
             bounds: None,
             from: None,
         })
+        .await
         .unwrap_or_else(|error| panic!("{}", error));
 
     if sync_map_items.len() == 0 {
@@ -91,6 +92,7 @@ pub fn choose_map_item_action(twilio: &Client, sync_service: &SyncService, map: 
                             .map(&map.sid)
                             .mapitem(&selected_sync_map_item.key)
                             .delete()
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         sync_map_items.remove(selected_sync_map_index.expect(
                             "Could not find Sync Map item in existing Sync Map items list",

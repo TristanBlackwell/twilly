@@ -21,7 +21,7 @@ pub enum Action {
     Exit,
 }
 
-pub fn choose_account_action(twilio: &Client) {
+pub async fn choose_account_action(twilio: &Client) {
     let options: Vec<Action> = Action::iter().collect();
 
     loop {
@@ -49,6 +49,7 @@ pub fn choose_account_action(twilio: &Client) {
                         let account = twilio
                             .accounts()
                             .get(Some(&account_sid))
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         println!("{:#?}", account);
                         println!();
@@ -63,6 +64,7 @@ pub fn choose_account_action(twilio: &Client) {
                         let account = twilio
                             .accounts()
                             .create(Some(&friendly_name))
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         println!(
                             "Account created: {} ({})",
@@ -91,6 +93,7 @@ pub fn choose_account_action(twilio: &Client) {
                             let mut accounts = twilio
                                 .accounts()
                                 .list(Some(&friendly_name), status.as_ref())
+                                .await
                                 .unwrap_or_else(|error| panic!("{}", error));
 
                             // The action we can perform on the account we are using are limited.
@@ -272,7 +275,7 @@ pub fn choose_account_action(twilio: &Client) {
     }
 }
 
-fn change_account_name(twilio: &Client, account_sid: &str) {
+async fn change_account_name(twilio: &Client, account_sid: &str) {
     let friendly_name_prompt =
         Text::new("Provide a name:").with_validator(|val: &str| match val.len() > 0 {
             true => Ok(Validation::Valid),
@@ -284,6 +287,7 @@ fn change_account_name(twilio: &Client, account_sid: &str) {
         let updated_account = twilio
             .accounts()
             .update(account_sid, Some(&friendly_name), None)
+            .await
             .unwrap_or_else(|error| panic!("{}", error));
 
         println!("{:#?}", updated_account);
@@ -291,7 +295,7 @@ fn change_account_name(twilio: &Client, account_sid: &str) {
     }
 }
 
-fn activate_account(twilio: &Client, account_sid: &str) {
+async fn activate_account(twilio: &Client, account_sid: &str) {
     let confirmation_prompt =
         Confirm::new("Are you sure you wish to activate this account? (Yes / No)");
 
@@ -301,6 +305,7 @@ fn activate_account(twilio: &Client, account_sid: &str) {
             twilio
                 .accounts()
                 .update(account_sid, None, Some(&Status::Suspended))
+                .await
                 .unwrap_or_else(|error| panic!("{}", error));
 
             println!("Account activated.");
@@ -311,7 +316,7 @@ fn activate_account(twilio: &Client, account_sid: &str) {
     println!("Operation canceled. No changes were made.");
 }
 
-fn suspend_account(twilio: &Client, account_sid: &str) {
+async fn suspend_account(twilio: &Client, account_sid: &str) {
     let confirmation_prompt =
         Confirm::new("Are you sure you wish to suspend this account? Any activity will be disabled until the account is re-activated. (Yes / No)");
 
@@ -321,6 +326,7 @@ fn suspend_account(twilio: &Client, account_sid: &str) {
             let res = twilio
                 .accounts()
                 .update(account_sid, None, Some(&Status::Suspended))
+                .await
                 .unwrap_or_else(|error| panic!("{}", error));
 
             println!("{}", res);
@@ -332,7 +338,7 @@ fn suspend_account(twilio: &Client, account_sid: &str) {
     println!("Operation canceled. No changes were made.");
 }
 
-fn close_account(twilio: &Client, account_sid: &str) {
+async fn close_account(twilio: &Client, account_sid: &str) {
     let confirmation_prompt =
         Confirm::new("Are you sure you wish to Close this account? Activity will be disabled and this action cannot be reversed. (Yes / No)");
 
@@ -342,6 +348,7 @@ fn close_account(twilio: &Client, account_sid: &str) {
             twilio
                 .accounts()
                 .update(account_sid, None, Some(&Status::Suspended))
+                .await
                 .unwrap_or_else(|error| panic!("{}", error));
 
             println!(

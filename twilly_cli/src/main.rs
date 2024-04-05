@@ -9,7 +9,8 @@ use strum::IntoEnumIterator;
 use twilly::{self, SubResource, TwilioConfig};
 use twilly_cli::{prompt_user_selection, request_credentials};
 
-fn main() {
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
     print_welcome_message();
 
     let mut loaded_config = false;
@@ -46,6 +47,7 @@ fn main() {
         let account = twilio
             .accounts()
             .get(None)
+            .await
             .unwrap_or_else(|error| panic!("{}", error));
 
         println!(
@@ -80,9 +82,11 @@ fn main() {
         let sub_resource = SubResource::from_str(&sub_resource).unwrap();
 
         match sub_resource {
-            twilly::SubResource::Account => account::choose_account_action(&twilio),
-            twilly::SubResource::Conversations => conversation::choose_conversation_action(&twilio),
-            twilly::SubResource::Sync => sync::choose_sync_resource(&twilio),
+            twilly::SubResource::Account => account::choose_account_action(&twilio).await,
+            twilly::SubResource::Conversations => {
+                conversation::choose_conversation_action(&twilio).await
+            }
+            twilly::SubResource::Sync => sync::choose_sync_resource(&twilio).await,
         }
     }
 }

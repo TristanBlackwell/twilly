@@ -16,7 +16,7 @@ pub enum Action {
     Exit,
 }
 
-pub fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
+pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
     let options: Vec<Action> = Action::iter().collect();
 
     loop {
@@ -47,6 +47,7 @@ pub fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
                             .service(&sync_service.sid)
                             .document(&document_sid)
                             .get()
+                            .await
                         {
                             Ok(document) => loop {
                                 if let Some(action_choice) = get_action_choice_from_user(
@@ -75,6 +76,7 @@ pub fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
                                                         .service(&sync_service.sid)
                                                         .document(&document_sid)
                                                         .delete()
+                                                        .await
                                                         .unwrap_or_else(|error| {
                                                             panic!("{}", error)
                                                         });
@@ -112,6 +114,7 @@ pub fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
                         .service(&sync_service.sid)
                         .documents()
                         .list()
+                        .await
                         .unwrap_or_else(|error| panic!("{}", error));
 
                     let number_of_documents = documents.len();
@@ -183,6 +186,7 @@ pub fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
                                                         .service(&sync_service.sid)
                                                         .document(&selected_document.sid)
                                                         .delete()
+                                                        .await
                                                         .unwrap_or_else(|error| {
                                                             panic!("{}", error)
                                                         });
