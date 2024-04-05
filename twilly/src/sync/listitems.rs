@@ -98,16 +98,19 @@ impl<'a, 'b> ListItems<'a, 'b> {
     /// [Creates a Sync List Item](https://www.twilio.com/docs/sync/api/listitem-resource#create-a-listitem-resource)
     ///
     /// Creates a Sync List Item with the provided parameters.
-    pub fn create(&self, params: CreateParams) -> Result<SyncListItem, TwilioError> {
-        let list_item = self.client.send_request::<SyncListItem, CreateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items",
-                self.service_sid, self.list_sid
-            ),
-            Some(&params),
-            None,
-        );
+    pub async fn create(&self, params: CreateParams) -> Result<SyncListItem, TwilioError> {
+        let list_item = self
+            .client
+            .send_request::<SyncListItem, CreateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items",
+                    self.service_sid, self.list_sid
+                ),
+                Some(&params),
+                None,
+            )
+            .await;
 
         list_item
     }
@@ -120,26 +123,32 @@ impl<'a, 'b> ListItems<'a, 'b> {
     /// argument and lists all List items.
     ///
     /// List items will be _eagerly_ paged until all retrieved.
-    pub fn list(&self, params: ListParams) -> Result<Vec<SyncListItem>, TwilioError> {
-        let mut list_items_page = self.client.send_request::<ListItemPage, ListParams>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items?PageSize=50",
-                self.service_sid, self.list_sid
-            ),
-            Some(&params),
-            None,
-        )?;
+    pub async fn list(&self, params: ListParams) -> Result<Vec<SyncListItem>, TwilioError> {
+        let mut list_items_page = self
+            .client
+            .send_request::<ListItemPage, ListParams>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items?PageSize=50",
+                    self.service_sid, self.list_sid
+                ),
+                Some(&params),
+                None,
+            )
+            .await?;
 
         let mut results: Vec<SyncListItem> = list_items_page.items;
 
         while (list_items_page.meta.next_page_url).is_some() {
-            list_items_page = self.client.send_request::<ListItemPage, ListParams>(
-                Method::GET,
-                &list_items_page.meta.next_page_url.unwrap(),
-                None,
-                None,
-            )?;
+            list_items_page = self
+                .client
+                .send_request::<ListItemPage, ListParams>(
+                    Method::GET,
+                    &list_items_page.meta.next_page_url.unwrap(),
+                    None,
+                    None,
+                )
+                .await?;
 
             results.append(&mut list_items_page.items);
         }
@@ -161,16 +170,19 @@ impl<'a, 'b> ListItem<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument, the List provided to the `list()`
     /// argument and fetches the item with the index provided to `listitem()`.
-    pub fn get(&self) -> Result<SyncListItem, TwilioError> {
-        let list_item = self.client.send_request::<SyncListItem, ()>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items/{}",
-                self.service_sid, self.list_sid, self.index
-            ),
-            None,
-            None,
-        );
+    pub async fn get(&self) -> Result<SyncListItem, TwilioError> {
+        let list_item = self
+            .client
+            .send_request::<SyncListItem, ()>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items/{}",
+                    self.service_sid, self.list_sid, self.index
+                ),
+                None,
+                None,
+            )
+            .await;
 
         list_item
     }
@@ -179,22 +191,25 @@ impl<'a, 'b> ListItem<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument, the List provided to the `list()`
     /// argument and updates the item with the index provided to `listitem()` with the parameters.
-    pub fn update(&self, params: UpdateParams) -> Result<SyncListItem, TwilioError> {
+    pub async fn update(&self, params: UpdateParams) -> Result<SyncListItem, TwilioError> {
         let mut headers = HeaderMap::new();
 
         if let Some(if_match) = params.if_match.clone() {
             headers.append("If-Match", if_match.parse().unwrap());
         }
 
-        let list_item = self.client.send_request::<SyncListItem, UpdateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items/{}",
-                self.service_sid, self.list_sid, self.index
-            ),
-            Some(&params),
-            Some(headers),
-        );
+        let list_item = self
+            .client
+            .send_request::<SyncListItem, UpdateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items/{}",
+                    self.service_sid, self.list_sid, self.index
+                ),
+                Some(&params),
+                Some(headers),
+            )
+            .await;
 
         list_item
     }
@@ -203,16 +218,19 @@ impl<'a, 'b> ListItem<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument, the List provided to the `list()`
     /// argument and deletes the item with the index provided to `listitem()`.
-    pub fn delete(&self) -> Result<(), TwilioError> {
-        let list_item = self.client.send_request_and_ignore_response::<()>(
-            Method::DELETE,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items/{}",
-                self.service_sid, self.list_sid, self.index
-            ),
-            None,
-            None,
-        );
+    pub async fn delete(&self) -> Result<(), TwilioError> {
+        let list_item = self
+            .client
+            .send_request_and_ignore_response::<()>(
+                Method::DELETE,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items/{}",
+                    self.service_sid, self.list_sid, self.index
+                ),
+                None,
+                None,
+            )
+            .await;
 
         list_item
     }

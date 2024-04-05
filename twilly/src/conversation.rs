@@ -145,13 +145,16 @@ impl<'a> Conversations<'a> {
     /// [Gets a Conversation](https://www.twilio.com/docs/conversations/api/conversation-resource#fetch-a-conversation-resource)
     ///
     /// Takes in a `sid` argument which can also be the Conversations `uniqueName`.
-    pub fn get(&self, sid: &str) -> Result<Conversation, TwilioError> {
-        let conversation = self.client.send_request::<Conversation, ()>(
-            Method::GET,
-            &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
-            None,
-            None,
-        );
+    pub async fn get(&self, sid: &str) -> Result<Conversation, TwilioError> {
+        let conversation = self
+            .client
+            .send_request::<Conversation, ()>(
+                Method::GET,
+                &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
+                None,
+                None,
+            )
+            .await;
 
         conversation
     }
@@ -164,7 +167,7 @@ impl<'a> Conversations<'a> {
     /// - `start_date` - When the Conversation started, ISO8601 format e.g. `YYYY-MM-DDT00:00:00Z`.
     /// - `end_date` - When the Conversation ended, ISO8601 format e.g. `YYYY-MM-DDT00:00:00Z`.
     /// - `state` - Filter by state.
-    pub fn list(
+    pub async fn list(
         &self,
         start_date: Option<chrono::NaiveDate>,
         end_date: Option<chrono::NaiveDate>,
@@ -184,22 +187,28 @@ impl<'a> Conversations<'a> {
             state,
         };
 
-        let mut conversations_page = self.client.send_request::<ConversationPage, ListParams>(
-            Method::GET,
-            "https://conversations.twilio.com/v1/Conversations",
-            Some(&params),
-            None,
-        )?;
+        let mut conversations_page = self
+            .client
+            .send_request::<ConversationPage, ListParams>(
+                Method::GET,
+                "https://conversations.twilio.com/v1/Conversations",
+                Some(&params),
+                None,
+            )
+            .await?;
 
         let mut results: Vec<Conversation> = conversations_page.conversations;
 
         while (conversations_page.meta.next_page_url).is_some() {
-            conversations_page = self.client.send_request::<ConversationPage, ()>(
-                Method::GET,
-                &conversations_page.meta.next_page_url.unwrap(),
-                None,
-                None,
-            )?;
+            conversations_page = self
+                .client
+                .send_request::<ConversationPage, ()>(
+                    Method::GET,
+                    &conversations_page.meta.next_page_url.unwrap(),
+                    None,
+                    None,
+                )
+                .await?;
 
             results.append(&mut conversations_page.conversations);
         }
@@ -211,7 +220,7 @@ impl<'a> Conversations<'a> {
     ///
     /// Takes in a `sid` argument which can also be the conversations `uniqueName` and updates the resource with the
     /// provided properties.
-    pub fn update(
+    pub async fn update(
         &self,
         sid: &str,
         updates: UpdateConversation,
@@ -223,7 +232,8 @@ impl<'a> Conversations<'a> {
                 &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
                 Some(&updates),
                 None,
-            );
+            )
+            .await;
 
         conversation
     }
@@ -231,13 +241,16 @@ impl<'a> Conversations<'a> {
     /// [Deletes a Conversation](https://www.twilio.com/docs/conversations/api/conversation-resource#delete-a-conversation-resource)
     ///
     /// Takes in a `sid` argument which can also be the conversations `uniqueName` and **deletes** the resource.
-    pub fn delete(&self, sid: &str) -> Result<(), TwilioError> {
-        let conversation = self.client.send_request_and_ignore_response::<()>(
-            Method::DELETE,
-            &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
-            None,
-            None,
-        );
+    pub async fn delete(&self, sid: &str) -> Result<(), TwilioError> {
+        let conversation = self
+            .client
+            .send_request_and_ignore_response::<()>(
+                Method::DELETE,
+                &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
+                None,
+                None,
+            )
+            .await;
 
         conversation
     }

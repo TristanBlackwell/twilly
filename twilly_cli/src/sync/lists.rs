@@ -19,12 +19,13 @@ pub enum Action {
     Exit,
 }
 
-pub fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
+pub async fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
     let mut sync_lists = twilio
         .sync()
         .service(&sync_service.sid)
         .lists()
         .list()
+        .await
         .unwrap_or_else(|error| panic!("{}", error));
 
     if sync_lists.len() == 0 {
@@ -72,6 +73,7 @@ pub fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
             match resource {
                 Action::ListItem => {
                     listitems::choose_list_item_action(&twilio, sync_service, &selected_sync_list)
+                        .await
                 }
 
                 Action::ListDetails => {
@@ -89,6 +91,7 @@ pub fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
                             .service(&sync_service.sid)
                             .list(&selected_sync_list.sid)
                             .delete()
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         sync_lists.remove(
                             selected_sync_list_index

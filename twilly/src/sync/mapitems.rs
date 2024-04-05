@@ -99,16 +99,19 @@ impl<'a, 'b> MapItems<'a, 'b> {
     /// [Creates a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#create-a-mapitem-resource)
     ///
     /// Creates a Sync Map Item with the provided parameters.
-    pub fn create(&self, params: CreateParams) -> Result<SyncMapItem, TwilioError> {
-        let map_item = self.client.send_request::<SyncMapItem, CreateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items",
-                self.service_sid, self.map_sid
-            ),
-            Some(&params),
-            None,
-        );
+    pub async fn create(&self, params: CreateParams) -> Result<SyncMapItem, TwilioError> {
+        let map_item = self
+            .client
+            .send_request::<SyncMapItem, CreateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items",
+                    self.service_sid, self.map_sid
+                ),
+                Some(&params),
+                None,
+            )
+            .await;
 
         map_item
     }
@@ -121,26 +124,32 @@ impl<'a, 'b> MapItems<'a, 'b> {
     /// argument and lists all Map items.
     ///
     /// Map items will be _eagerly_ paged until all retrieved.
-    pub fn list(&self, params: ListParams) -> Result<Vec<SyncMapItem>, TwilioError> {
-        let mut map_items_page = self.client.send_request::<MapItemPage, ListParams>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items?PageSize=50",
-                self.service_sid, self.map_sid
-            ),
-            Some(&params),
-            None,
-        )?;
+    pub async fn list(&self, params: ListParams) -> Result<Vec<SyncMapItem>, TwilioError> {
+        let mut map_items_page = self
+            .client
+            .send_request::<MapItemPage, ListParams>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items?PageSize=50",
+                    self.service_sid, self.map_sid
+                ),
+                Some(&params),
+                None,
+            )
+            .await?;
 
         let mut results: Vec<SyncMapItem> = map_items_page.items;
 
         while (map_items_page.meta.next_page_url).is_some() {
-            map_items_page = self.client.send_request::<MapItemPage, ListParams>(
-                Method::GET,
-                &map_items_page.meta.next_page_url.unwrap(),
-                None,
-                None,
-            )?;
+            map_items_page = self
+                .client
+                .send_request::<MapItemPage, ListParams>(
+                    Method::GET,
+                    &map_items_page.meta.next_page_url.unwrap(),
+                    None,
+                    None,
+                )
+                .await?;
 
             results.append(&mut map_items_page.items);
         }
@@ -162,16 +171,19 @@ impl<'a, 'b> MapItem<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and fetches the item with the key provided to `mapitem()`.
-    pub fn get(&self) -> Result<SyncMapItem, TwilioError> {
-        let map_item = self.client.send_request::<SyncMapItem, ()>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",
-                self.service_sid, self.map_sid, self.key
-            ),
-            None,
-            None,
-        );
+    pub async fn get(&self) -> Result<SyncMapItem, TwilioError> {
+        let map_item = self
+            .client
+            .send_request::<SyncMapItem, ()>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",
+                    self.service_sid, self.map_sid, self.key
+                ),
+                None,
+                None,
+            )
+            .await;
 
         map_item
     }
@@ -180,22 +192,25 @@ impl<'a, 'b> MapItem<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and updates the item with the key provided to `mapitem()` with the parameters.
-    pub fn update(&self, params: UpdateParams) -> Result<SyncMapItem, TwilioError> {
+    pub async fn update(&self, params: UpdateParams) -> Result<SyncMapItem, TwilioError> {
         let mut headers = HeaderMap::new();
 
         if let Some(if_match) = params.if_match.clone() {
             headers.append("If-Match", if_match.parse().unwrap());
         }
 
-        let map_item = self.client.send_request::<SyncMapItem, UpdateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",
-                self.service_sid, self.map_sid, self.key
-            ),
-            Some(&params),
-            Some(headers),
-        );
+        let map_item = self
+            .client
+            .send_request::<SyncMapItem, UpdateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",
+                    self.service_sid, self.map_sid, self.key
+                ),
+                Some(&params),
+                Some(headers),
+            )
+            .await;
 
         map_item
     }
@@ -204,16 +219,19 @@ impl<'a, 'b> MapItem<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and deletes the item with the key provided to `mapitem()`.
-    pub fn delete(&self) -> Result<(), TwilioError> {
-        let map_item = self.client.send_request_and_ignore_response::<()>(
-            Method::DELETE,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",
-                self.service_sid, self.map_sid, self.key
-            ),
-            None,
-            None,
-        );
+    pub async fn delete(&self) -> Result<(), TwilioError> {
+        let map_item = self
+            .client
+            .send_request_and_ignore_response::<()>(
+                Method::DELETE,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",
+                    self.service_sid, self.map_sid, self.key
+                ),
+                None,
+                None,
+            )
+            .await;
 
         map_item
     }

@@ -79,16 +79,19 @@ impl<'a, 'b> Lists<'a, 'b> {
     /// [Creates a Sync List resource](https://www.twilio.com/docs/sync/api/list-resource#create-a-list-resource)
     ///
     /// Creates a Sync List resource with the provided parameters.
-    pub fn create(&self, params: CreateParams) -> Result<SyncList, TwilioError> {
-        let list = self.client.send_request::<SyncList, CreateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists",
-                &self.service_sid
-            ),
-            Some(&params),
-            None,
-        );
+    pub async fn create(&self, params: CreateParams) -> Result<SyncList, TwilioError> {
+        let list = self
+            .client
+            .send_request::<SyncList, CreateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists",
+                    &self.service_sid
+                ),
+                Some(&params),
+                None,
+            )
+            .await;
 
         list
     }
@@ -98,26 +101,32 @@ impl<'a, 'b> Lists<'a, 'b> {
     /// Lists Sync Lists existing on the Twilio account.
     ///
     /// Lists will be _eagerly_ paged until all retrieved.
-    pub fn list(&self) -> Result<Vec<SyncList>, TwilioError> {
-        let mut lists_page = self.client.send_request::<SyncListPage, ()>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists?PageSize=50",
-                self.service_sid
-            ),
-            None,
-            None,
-        )?;
+    pub async fn list(&self) -> Result<Vec<SyncList>, TwilioError> {
+        let mut lists_page = self
+            .client
+            .send_request::<SyncListPage, ()>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists?PageSize=50",
+                    self.service_sid
+                ),
+                None,
+                None,
+            )
+            .await?;
 
         let mut results: Vec<SyncList> = lists_page.lists;
 
         while (lists_page.meta.next_page_url).is_some() {
-            lists_page = self.client.send_request::<SyncListPage, ()>(
-                Method::GET,
-                &lists_page.meta.next_page_url.unwrap(),
-                None,
-                None,
-            )?;
+            lists_page = self
+                .client
+                .send_request::<SyncListPage, ()>(
+                    Method::GET,
+                    &lists_page.meta.next_page_url.unwrap(),
+                    None,
+                    None,
+                )
+                .await?;
 
             results.append(&mut lists_page.lists);
         }
@@ -138,16 +147,19 @@ impl<'a, 'b> List<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument and fetches the List
     /// provided to the `list()` argument.
-    pub fn get(&self) -> Result<SyncList, TwilioError> {
-        let list = self.client.send_request::<SyncList, ()>(
-            Method::GET,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists/{}",
-                self.service_sid, self.sid
-            ),
-            None,
-            None,
-        );
+    pub async fn get(&self) -> Result<SyncList, TwilioError> {
+        let list = self
+            .client
+            .send_request::<SyncList, ()>(
+                Method::GET,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists/{}",
+                    self.service_sid, self.sid
+                ),
+                None,
+                None,
+            )
+            .await;
 
         list
     }
@@ -156,16 +168,19 @@ impl<'a, 'b> List<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument  and updates the List
     /// provided to the `list()` argument.
-    pub fn update(&self, params: UpdateParams) -> Result<SyncList, TwilioError> {
-        let list = self.client.send_request::<SyncList, UpdateParams>(
-            Method::POST,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists/{}",
-                self.service_sid, self.sid
-            ),
-            Some(&params),
-            None,
-        );
+    pub async fn update(&self, params: UpdateParams) -> Result<SyncList, TwilioError> {
+        let list = self
+            .client
+            .send_request::<SyncList, UpdateParams>(
+                Method::POST,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists/{}",
+                    self.service_sid, self.sid
+                ),
+                Some(&params),
+                None,
+            )
+            .await;
 
         list
     }
@@ -176,16 +191,19 @@ impl<'a, 'b> List<'a, 'b> {
     /// provided to the `list()` argument.
     ///
     /// This will delete any Sync List items underneath this list.
-    pub fn delete(&self) -> Result<(), TwilioError> {
-        let list = self.client.send_request_and_ignore_response::<()>(
-            Method::DELETE,
-            &format!(
-                "https://sync.twilio.com/v1/Services/{}/Lists/{}",
-                self.service_sid, self.sid
-            ),
-            None,
-            None,
-        );
+    pub async fn delete(&self) -> Result<(), TwilioError> {
+        let list = self
+            .client
+            .send_request_and_ignore_response::<()>(
+                Method::DELETE,
+                &format!(
+                    "https://sync.twilio.com/v1/Services/{}/Lists/{}",
+                    self.service_sid, self.sid
+                ),
+                None,
+                None,
+            )
+            .await;
 
         list
     }

@@ -18,7 +18,7 @@ pub enum Action {
     Exit,
 }
 
-pub fn choose_list_item_action(twilio: &Client, sync_service: &SyncService, list: &SyncList) {
+pub async fn choose_list_item_action(twilio: &Client, sync_service: &SyncService, list: &SyncList) {
     let mut sync_list_items = twilio
         .sync()
         .service(&sync_service.sid)
@@ -29,6 +29,7 @@ pub fn choose_list_item_action(twilio: &Client, sync_service: &SyncService, list
             bounds: None,
             from: None,
         })
+        .await
         .unwrap_or_else(|error| panic!("{}", error));
 
     if sync_list_items.len() == 0 {
@@ -91,6 +92,7 @@ pub fn choose_list_item_action(twilio: &Client, sync_service: &SyncService, list
                             .list(&list.sid)
                             .listitem(&selected_sync_list_item.index)
                             .delete()
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         sync_list_items.remove(selected_sync_list_index.expect(
                             "Could not find Sync List item in existing Sync List items list",

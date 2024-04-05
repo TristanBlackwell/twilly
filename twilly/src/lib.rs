@@ -1,10 +1,11 @@
-/*! This crate is an *synchronous* implementation of the Twilio API in Rust built
+/*! This crate is an implementation of the Twilio API in Rust built
 upon Reqwest and Serde.
 
 Coverage is partial yet provides an idiomatic usage pattern currently covering:
 
 - Accounts
 - Conversations
+- Sync (Documents, Lists, and Maps)
 
 This crate has been developed alongside the `twilly-cli crate which provides an
 enhanced Twilio CLI experience.
@@ -40,7 +41,7 @@ use std::fmt::{self};
 
 use account::Accounts;
 use conversation::Conversations;
-use reqwest::{blocking::Response, header::HeaderMap, Method};
+use reqwest::{header::HeaderMap, Method, Response};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 use sync::Sync;
@@ -84,7 +85,7 @@ impl TwilioConfig {
 /// Twilio's API.
 pub struct Client {
     pub config: TwilioConfig,
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
 }
 
 /// Crate error wrapping containing a `kind` used
@@ -177,14 +178,14 @@ impl Client {
     pub fn new(config: &TwilioConfig) -> Self {
         Self {
             config: config.clone(),
-            client: reqwest::blocking::Client::new(),
+            client: reqwest::Client::new(),
         }
     }
 
     /// Dispatches a request to Twilio and handles parsing the response.
     ///
     /// The function takes two generics `T` and `U`. `T` is the expected response
-    /// body and `U` is the parameters structre.
+    /// body and `U` is the parameters structure.
     ///
     /// If the method allows for a request body then `params` is sent as
     /// x-www-form-urlencoded otherwise `params` are attached as query
@@ -192,7 +193,7 @@ impl Client {
     ///
     /// Will return a result of either the resource type or one of the
     /// possible errors.
-    fn send_request<T, U>(
+    async fn send_request<T, U>(
         &self,
         method: Method,
         url: &str,
@@ -203,16 +204,16 @@ impl Client {
         T: serde::de::DeserializeOwned,
         U: Serialize + ?Sized,
     {
-        let response = self.send_http_request(method, url, params, headers)?;
+        let response = self.send_http_request(method, url, params, headers).await?;
 
         match response.status().is_success() {
-            true => response.json::<T>().map_err(|error| TwilioError {
+            true => response.json::<T>().await.map_err(|error| TwilioError {
                 kind: ErrorKind::ParsingError(error),
             }),
             false => {
                 let parsed_twilio_error = response.json::<TwilioApiError>();
 
-                match parsed_twilio_error {
+                match parsed_twilio_error.await {
                     Ok(twilio_error) => Err(TwilioError {
                         kind: ErrorKind::TwilioError(twilio_error),
                     }),
@@ -228,7 +229,7 @@ impl Client {
     /// for mutating where either the response is irrelevant or there is nothing returned.
     ///
     /// Params and result follow the same behaviour as `send_request`.
-    fn send_request_and_ignore_response<T>(
+    async fn send_request_and_ignore_response<T>(
         &self,
         method: Method,
         url: &str,
@@ -238,14 +239,14 @@ impl Client {
     where
         T: Serialize + ?Sized,
     {
-        let response = self.send_http_request(method, url, params, headers)?;
+        let response = self.send_http_request(method, url, params, headers).await?;
 
         match response.status().is_success() {
             true => Ok(()),
             false => {
                 let parsed_twilio_error = response.json::<TwilioApiError>();
 
-                match parsed_twilio_error {
+                match parsed_twilio_error.await {
                     Ok(twilio_error) => Err(TwilioError {
                         kind: ErrorKind::TwilioError(twilio_error),
                     }),
@@ -259,7 +260,7 @@ impl Client {
 
     // @INTERNAL
     // Helper function for `send_request`. Not designed to be used independently.
-    fn send_http_request<T>(
+    async fn send_http_request<T>(
         &self,
         method: Method,
         url: &str,
@@ -270,20 +271,24 @@ impl Client {
         T: Serialize + ?Sized,
     {
         match method {
-            Method::GET => self
-                .client
-                .request(method, url)
-                .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
-                .headers(headers.unwrap_or_default())
-                .query(&params)
-                .send(),
-            _ => self
-                .client
-                .request(method, url)
-                .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
-                .headers(headers.unwrap_or_default())
-                .form(&params)
-                .send(),
+            Method::GET => {
+                self.client
+                    .request(method, url)
+                    .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+                    .headers(headers.unwrap_or_default())
+                    .query(&params)
+                    .send()
+                    .await
+            }
+            _ => {
+                self.client
+                    .request(method, url)
+                    .basic_auth(&self.config.account_sid, Some(&self.config.auth_token))
+                    .headers(headers.unwrap_or_default())
+                    .form(&params)
+                    .send()
+                    .await
+            }
         }
         .map_err(|error| TwilioError {
             kind: ErrorKind::NetworkError(error),

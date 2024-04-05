@@ -27,11 +27,12 @@ pub enum Action {
     Exit,
 }
 
-pub fn choose_sync_resource(twilio: &Client) {
+pub async fn choose_sync_resource(twilio: &Client) {
     let mut sync_services = twilio
         .sync()
         .services()
         .list()
+        .await
         .unwrap_or_else(|error| panic!("{}", error));
 
     if sync_services.len() == 0 {
@@ -88,6 +89,7 @@ pub fn choose_sync_resource(twilio: &Client) {
                                             webhooks_from_rest_enabled: None,
                                             webhook_url: None,
                                         })
+                                        .await
                                         .unwrap_or_else(|error| panic!("{}", error));
                                     sync_services.push(sync_service);
                                     selected_sync_service_index = Some(sync_services.len() - 1);
@@ -121,10 +123,10 @@ pub fn choose_sync_resource(twilio: &Client) {
         if let Some(resource) = prompt_user_selection(resource_selection_prompt) {
             match resource {
                 Action::Document => {
-                    documents::choose_document_action(&twilio, selected_sync_service)
+                    documents::choose_document_action(&twilio, selected_sync_service).await
                 }
-                Action::Map => maps::choose_map_action(&twilio, selected_sync_service),
-                Action::List => lists::choose_list_action(&twilio, selected_sync_service),
+                Action::Map => maps::choose_map_action(&twilio, selected_sync_service).await,
+                Action::List => lists::choose_list_action(&twilio, selected_sync_service).await,
                 Action::ListDetails => {
                     println!("{:#?}", selected_sync_service);
                     println!()
@@ -139,6 +141,7 @@ pub fn choose_sync_resource(twilio: &Client) {
                             .sync()
                             .service(&selected_sync_service.sid)
                             .delete()
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         sync_services.remove(
                             selected_sync_service_index.expect(

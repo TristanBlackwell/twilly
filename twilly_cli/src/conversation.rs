@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use twilly::{
     conversation::{Conversation, State, UpdateConversation},
-    Client, ErrorKind, TwilioError,
+    Client, ErrorKind,
 };
 use twilly_cli::{
     get_action_choice_from_user, get_filter_choice_from_user, prompt_user, prompt_user_selection,
@@ -27,7 +27,7 @@ pub enum Action {
     Exit,
 }
 
-pub fn choose_conversation_action(twilio: &Client) {
+pub async fn choose_conversation_action(twilio: &Client) {
     let options: Vec<Action> = Action::iter().collect();
 
     loop {
@@ -50,7 +50,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                             });
 
                     if let Some(conversation_sid) = prompt_user(conversation_sid_prompt) {
-                        match twilio.conversations().get(&conversation_sid) {
+                        match twilio.conversations().get(&conversation_sid).await {
                             Ok(conversation) => {
                                 println!("Conversation found.");
                                 println!();
@@ -79,6 +79,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                     twilio
                                                         .conversations()
                                                         .delete(&conversation_sid)
+                                                        .await
                                                         .unwrap_or_else(|error| {
                                                             panic!("{}", error)
                                                         });
@@ -184,6 +185,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                             let mut conversations = twilio
                                 .conversations()
                                 .list(start_date, end_date, state)
+                                .await
                                 .unwrap_or_else(|error| panic!("{}", error));
 
                             let number_of_conversations = conversations.len();
@@ -275,7 +277,8 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                             delete_conversation(
                                                                 twilio,
                                                                 &selected_conversation.sid,
-                                                            );
+                                                            )
+                                                            .await;
                                                             conversations.remove(
                                                                 selected_conversation_index
                                                                     .expect("Could not find conversation in existing conversation list"),
@@ -332,7 +335,8 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                                         attributes: None,
                                                                         timers: None,
                                                                     },
-                                                                );
+                                                                )
+                                                                .await;
                                                             conversations
                                                                 [selected_conversation_index
                                                                     .expect("Could not find conversation in existing conversation list")] =
@@ -343,7 +347,8 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                             delete_conversation(
                                                                 twilio,
                                                                 &selected_conversation.sid,
-                                                            );
+                                                            )
+                                                            .await;
                                                             conversations.remove(
                                                                 selected_conversation_index
                                                                     .expect("Could not find conversation in existing conversation list"),
@@ -402,7 +407,8 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                                         attributes: None,
                                                                         timers: None,
                                                                     },
-                                                                );
+                                                                )
+                                                                .await;
                                                             conversations
                                                                 [selected_conversation_index
                                                                     .expect("Could not find conversation in existing conversation list")] =
@@ -413,7 +419,8 @@ pub fn choose_conversation_action(twilio: &Client) {
                                                             delete_conversation(
                                                                 twilio,
                                                                 &selected_conversation.sid,
-                                                            );
+                                                            )
+                                                            .await;
                                                             conversations.remove(
                                                                 selected_conversation_index
                                                                     .expect("Could not find conversation in existing conversation list"),
@@ -449,7 +456,7 @@ pub fn choose_conversation_action(twilio: &Client) {
                             });
 
                     if let Some(conversation_sid) = prompt_user(conversation_sid_prompt) {
-                        delete_conversation(twilio, &conversation_sid);
+                        delete_conversation(twilio, &conversation_sid).await;
                     } else {
                         println!("Operation canceled. No changes were made.");
                     }
@@ -471,14 +478,20 @@ pub fn choose_conversation_action(twilio: &Client) {
                                     let conversations = twilio
                                         .conversations()
                                         .list(None, None, None)
+                                        .await
                                         .unwrap_or_else(|error| panic!("{}", error));
 
-                                    conversations
-                                        .into_iter()
-                                        .try_for_each(|conversation| -> Result<(), TwilioError> {
-                                            twilio.conversations().delete(&conversation.sid)
-                                        })
-                                        .unwrap_or_else(|error| panic!("{}", error));
+                                    for conversation in conversations {
+                                        twilio
+                                            .conversations()
+                                            .delete(&conversation.sid)
+                                            .await
+                                            .unwrap_or_else(|error| panic!("{}", error));
+                                        // This is not particularly smart but this prevents overwhelming Twilio.
+                                        // Delete 1 Conversation per second. The rate could be much higher than this.
+                                        tokio::time::sleep(tokio::time::Duration::from_secs(1))
+                                            .await;
+                                    }
 
                                     println!("All conversations deleted.");
                                     println!("");
@@ -502,8 +515,12 @@ pub fn choose_conversation_action(twilio: &Client) {
 
 /// Prompts the user for confirmation before deleting the conversation with
 /// the SID provided. Will panic if the delete operation fails.
-fn update_conversation(twilio: &Client, sid: &str, updates: UpdateConversation) -> Conversation {
-    match twilio.conversations().update(sid, updates) {
+async fn update_conversation(
+    twilio: &Client,
+    sid: &str,
+    updates: UpdateConversation,
+) -> Conversation {
+    match twilio.conversations().update(sid, updates).await {
         Ok(updated_conversation) => {
             println!("Conversation updated.");
             println!();
@@ -516,13 +533,13 @@ fn update_conversation(twilio: &Client, sid: &str, updates: UpdateConversation) 
 
 /// Prompts the user for confirmation before deleting the conversation with
 /// the SID provided. Will panic if the delete operation fails.
-fn delete_conversation(twilio: &Client, sid: &str) {
+async fn delete_conversation(twilio: &Client, sid: &str) {
     let confirmation_prompt =
         Confirm::new("Are you sure to wish to delete the Conversation? (Yes / No)");
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
         if confirmation == true {
-            match twilio.conversations().delete(&sid) {
+            match twilio.conversations().delete(&sid).await {
                 Ok(_) => {
                     println!("Conversation deleted.");
                     println!("");
