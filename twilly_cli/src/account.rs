@@ -167,7 +167,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             change_account_name(
                                                                 twilio,
                                                                 &selected_account.sid,
-                                                            );
+                                                            )
+                                                            .await;
                                                             accounts[selected_account_index
                                                                 .expect(
                                                                     "Selected account is unknown",
@@ -178,7 +179,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             suspend_account(
                                                                 twilio,
                                                                 &selected_account.sid,
-                                                            );
+                                                            )
+                                                            .await;
                                                             accounts[selected_account_index
                                                                 .expect(
                                                                     "Selected account is unknown",
@@ -189,7 +191,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             close_account(
                                                                 twilio,
                                                                 &selected_account.sid,
-                                                            );
+                                                            )
+                                                            .await;
                                                             accounts[selected_account_index
                                                                 .expect(
                                                                     "Selected account is unknown",
@@ -220,7 +223,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             change_account_name(
                                                                 twilio,
                                                                 &selected_account.sid,
-                                                            );
+                                                            )
+                                                            .await;
                                                             accounts[selected_account_index
                                                                 .expect(
                                                                     "Selected account is unknown",
@@ -231,7 +235,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             activate_account(
                                                                 twilio,
                                                                 &selected_account.sid,
-                                                            );
+                                                            )
+                                                            .await;
                                                             accounts[selected_account_index
                                                                 .expect(
                                                                     "Selected account is unknown",

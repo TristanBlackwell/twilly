@@ -1,10 +1,11 @@
-/*! This crate is an *synchronous* implementation of the Twilio API in Rust built
+/*! This crate is an implementation of the Twilio API in Rust built
 upon Reqwest and Serde.
 
 Coverage is partial yet provides an idiomatic usage pattern currently covering:
 
 - Accounts
 - Conversations
+- Sync (Documents, Lists, and Maps)
 
 This crate has been developed alongside the `twilly-cli crate which provides an
 enhanced Twilio CLI experience.

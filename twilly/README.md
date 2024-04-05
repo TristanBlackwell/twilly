@@ -1,7 +1,7 @@
 
 ## twilly
 
-`twilly` is a *synchronous* helper library bringing access to Twilio's API's via Rust. The library supports a client-based approach, instantiating a twilio client with credentials before sending & receiving requests.
+`twilly` is a helper library bringing access to Twilio's API's via Rust. The library supports a client-based approach, instantiating a twilio client with credentials before sending & receiving requests.
 
 ```rust
 let config =  TwilioConfig {

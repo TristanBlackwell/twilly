@@ -2,7 +2,7 @@
 name = "twilly"
 version = "0.0.4"
 edition = "2021"
-description = "A *synchronous* implementation of the Twilio API in Rust built upon Reqwest and Serde"
+description = "A implementation of the Twilio API in Rust built upon Reqwest and Serde"
 authors = ["Tristan Blackwell"]
 repository = "https://github.com/TristanBlackwell/twilly"
 homepage = "https://github.com/TristanBlackwell/twilly"
