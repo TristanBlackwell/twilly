@@ -41,12 +41,12 @@ pub struct SyncMapItem {
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
 pub struct CreateParams {
-    key: String,
-    data: Value,
+    pub key: String,
+    pub data: Value,
     /// How long the Map Item should exist before deletion (in seconds).
-    ttl: Option<u16>,
+    pub ttl: Option<u16>,
     /// How long the *parent* Map resource should exist before deletion (in seconds).
-    collection_ttl: Option<u16>,
+    pub collection_ttl: Option<u16>,
 }
 
 #[derive(Serialize)]
