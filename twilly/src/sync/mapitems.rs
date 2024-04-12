@@ -14,8 +14,8 @@ use serde_with::skip_serializing_none;
 #[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct MapItemPage {
-    items: Vec<SyncMapItem>,
-    meta: PageMeta,
+    pub items: Vec<SyncMapItem>,
+    pub meta: PageMeta,
 }
 
 /// A Sync Map Item resource.
@@ -36,17 +36,35 @@ pub struct SyncMapItem {
     pub revision: String,
 }
 
-/// Parameters for creating a Sync Map Item
+/// Parameters for creating a Sync Map Item. Data must be a value
+/// capable to converting to JSON in which all keys must be
+/// strings.
+pub struct CreateParams<'a, T>
+where
+    T: ?Sized + Serialize,
+{
+    pub key: String,
+    /// Any value that can be represented as JSON
+    pub data: &'a T,
+    /// How long the Map Item should exist before deletion (in seconds).
+    pub ttl: Option<u16>,
+    /// How long the *parent* Map resource should exist before deletion (in seconds).
+    pub collection_ttl: Option<u16>,
+}
+
+/// Parameters for creating a Sync Map Item with
+/// data converted to a JSON string
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct CreateParams {
-    key: String,
-    data: Value,
+pub struct CreateParamsWithJson {
+    pub key: String,
+    /// JSON string of data
+    pub data: String,
     /// How long the Map Item should exist before deletion (in seconds).
-    ttl: Option<u16>,
+    pub ttl: Option<u16>,
     /// How long the *parent* Map resource should exist before deletion (in seconds).
-    collection_ttl: Option<u16>,
+    pub collection_ttl: Option<u16>,
 }
 
 #[derive(Serialize)]
@@ -99,10 +117,23 @@ impl<'a, 'b> MapItems<'a, 'b> {
     /// [Creates a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#create-a-mapitem-resource)
     ///
     /// Creates a Sync Map Item with the provided parameters.
-    pub async fn create(&self, params: CreateParams) -> Result<SyncMapItem, TwilioError> {
+    pub async fn create<T>(&self, params: CreateParams<'_, T>) -> Result<SyncMapItem, TwilioError>
+    where
+        T: ?Sized + Serialize,
+    {
+        // Create a new struct with the provided data parameter converted to a
+        // JSON string as required by Twilio.
+        let params = CreateParamsWithJson {
+            key: params.key,
+            data: serde_json::to_string(params.data)
+                .expect("Unable to convert provided data value to a JSON string"),
+            ttl: params.ttl,
+            collection_ttl: params.collection_ttl,
+        };
+
         let map_item = self
             .client
-            .send_request::<SyncMapItem, CreateParams>(
+            .send_request::<SyncMapItem, CreateParamsWithJson>(
                 Method::POST,
                 &format!(
                     "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items",
