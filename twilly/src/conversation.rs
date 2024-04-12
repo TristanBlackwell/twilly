@@ -1,6 +1,6 @@
 /*!
 
-Contains Twilio conversations related functionality.
+Contains Twilio conversation related functionality.
 
 */
 use std::fmt;
