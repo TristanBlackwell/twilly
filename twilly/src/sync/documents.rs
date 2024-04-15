@@ -52,24 +52,50 @@ impl Default for Links {
 }
 
 /// Parameters for creating a Sync Document
-#[skip_serializing_none]
-#[derive(Serialize)]
-#[serde(rename_all(serialize = "PascalCase"))]
-pub struct CreateParams {
+pub struct CreateParams<'a, T>
+where
+    T: ?Sized + Serialize,
+{
     unique_name: Option<String>,
-    data: Value,
+    data: &'a T,
     /// How long the Document should exist before deletion (in seconds).
     ttl: Option<u16>,
 }
 
-/// Parameters for updating a Sync Service
+/// Parameters for creating a Sync Document with
+/// data converted to a JSON string
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct UpdateParams {
+pub struct CreateParamsWithJson {
+    unique_name: Option<String>,
+    data: String,
+    /// How long the Document should exist before deletion (in seconds).
+    ttl: Option<u16>,
+}
+
+/// Parameters for updating a Sync Document
+pub struct UpdateParams<'a, T>
+where
+    T: ?Sized + Serialize,
+{
+    if_match: Option<String>,
+    /// Any value that can be represented as JSON
+    data: &'a T,
+    /// How long the Document should exist before deletion (in seconds).
+    ttl: Option<u16>,
+}
+
+/// Parameters for creating a Sync Document with
+/// data converted to a JSON string
+#[skip_serializing_none]
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "PascalCase"))]
+pub struct UpdateParamsWithJson {
     #[serde(rename(serialize = "If-Match"))]
     if_match: Option<String>,
-    data: Value,
+    /// Any value that can be represented as JSON
+    data: String,
     /// How long the Document should exist before deletion (in seconds).
     ttl: Option<u16>,
 }
@@ -83,10 +109,20 @@ impl<'a, 'b> Documents<'a, 'b> {
     /// [Creates a Sync Document](https://www.twilio.com/docs/sync/api/document-resource)
     ///
     /// Creates a Sync Document with the provided parameters.
-    pub async fn create(&self, params: CreateParams) -> Result<SyncDocument, TwilioError> {
+    pub async fn create<T>(&self, params: CreateParams<'_, T>) -> Result<SyncDocument, TwilioError>
+    where
+        T: ?Sized + Serialize,
+    {
+        let params = CreateParamsWithJson {
+            unique_name: params.unique_name,
+            data: serde_json::to_string(params.data)
+                .expect("Unable to convert provided data value to a JSON string"),
+            ttl: params.ttl,
+        };
+
         let document = self
             .client
-            .send_request::<SyncDocument, CreateParams>(
+            .send_request::<SyncDocument, CreateParamsWithJson>(
                 Method::POST,
                 &format!(
                     "https://sync.twilio.com/v1/Services/{}/Documents",
@@ -172,7 +208,19 @@ impl<'a, 'b> Document<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument and updates the Document
     /// provided to the `document()` argument.
-    pub async fn update(&self, params: UpdateParams) -> Result<SyncDocument, TwilioError> {
+    pub async fn update<T>(&self, params: UpdateParams<'_, T>) -> Result<SyncDocument, TwilioError>
+    where
+        T: ?Sized + Serialize,
+    {
+        // Create a new struct with the provided data parameter converted to a
+        // JSON string as required by Twilio.
+        let params = UpdateParamsWithJson {
+            if_match: params.if_match,
+            data: serde_json::to_string(params.data)
+                .expect("Unable to convert provided data value to a JSON string"),
+            ttl: params.ttl,
+        };
+
         let mut headers = HeaderMap::new();
 
         if let Some(if_match) = params.if_match.clone() {
@@ -181,7 +229,7 @@ impl<'a, 'b> Document<'a, 'b> {
 
         let document = self
             .client
-            .send_request::<SyncDocument, UpdateParams>(
+            .send_request::<SyncDocument, UpdateParamsWithJson>(
                 Method::POST,
                 &format!(
                     "https://sync.twilio.com/v1/Services/{}/Documents/{}",

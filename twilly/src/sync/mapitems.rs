@@ -93,13 +93,30 @@ pub struct ListParams {
 }
 
 /// Parameters for updating a Sync Map Item
+pub struct UpdateParams<'a, T>
+where
+    T: ?Sized + Serialize,
+{
+    if_match: Option<String>,
+    /// Any value that can be represented as JSON
+    pub data: &'a T,
+    /// How long the Map Item should exist before deletion (in seconds).
+    ttl: Option<u16>,
+    /// How long the *parent* Map resource should exist before deletion (in seconds). Can only be used
+    /// if the `data` or `ttl` is updated in the same request.
+    collection_ttl: Option<u16>,
+}
+
+/// Parameters for updating a Sync Map Item with
+/// data converted to a JSON string
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct UpdateParams {
+pub struct UpdateParamsWithJson {
     #[serde(rename(serialize = "If-Match"))]
     if_match: Option<String>,
-    data: Value,
+    /// Any value that can be represented as JSON
+    pub data: String,
     /// How long the Map Item should exist before deletion (in seconds).
     ttl: Option<u16>,
     /// How long the *parent* Map resource should exist before deletion (in seconds). Can only be used
@@ -223,7 +240,20 @@ impl<'a, 'b> MapItem<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and updates the item with the key provided to `mapitem()` with the parameters.
-    pub async fn update(&self, params: UpdateParams) -> Result<SyncMapItem, TwilioError> {
+    pub async fn update<T>(&self, params: UpdateParams<'_, T>) -> Result<SyncMapItem, TwilioError>
+    where
+        T: ?Sized + Serialize,
+    {
+        // Create a new struct with the provided data parameter converted to a
+        // JSON string as required by Twilio.
+        let params = UpdateParamsWithJson {
+            if_match: params.if_match,
+            data: serde_json::to_string(params.data)
+                .expect("Unable to convert provided data value to a JSON string"),
+            ttl: params.ttl,
+            collection_ttl: params.collection_ttl,
+        };
+
         let mut headers = HeaderMap::new();
 
         if let Some(if_match) = params.if_match.clone() {
@@ -232,7 +262,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
 
         let map_item = self
             .client
-            .send_request::<SyncMapItem, UpdateParams>(
+            .send_request::<SyncMapItem, UpdateParamsWithJson>(
                 Method::POST,
                 &format!(
                     "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",
