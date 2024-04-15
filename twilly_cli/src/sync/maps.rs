@@ -1,16 +1,9 @@
 use std::process;
 
-use inquire::{Confirm, Select, Text};
+use inquire::{Confirm, Select};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
-use twilly::{
-    sync::{
-        mapitems::{CreateParams as CreateMapItemParams, ListParams},
-        maps::CreateParams as CreateMapParams,
-        services::SyncService,
-    },
-    Client,
-};
+use twilly::{sync::services::SyncService, Client};
 use twilly_cli::{get_action_choice_from_user, prompt_user, prompt_user_selection, ActionChoice};
 
 use crate::sync::mapitems;
@@ -21,7 +14,6 @@ pub enum Action {
     MapItem,
     #[strum(to_string = "List Details")]
     ListDetails,
-    Rename,
     Delete,
     Back,
     Exit,
@@ -87,87 +79,6 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                 Action::ListDetails => {
                     println!("{:#?}", selected_sync_map);
                     println!()
-                }
-                Action::Rename => {
-                    let get_renamed_map_name = Text::new(
-                        "What would you like to rename this map to? The new map name must match `^[a-zA-Z-_0-9]+$`"
-                    );
-                    let get_rename_prompt_result = prompt_user(get_renamed_map_name);
-                    let mut new_name = String::from("");
-                    if get_rename_prompt_result.is_none() {
-                        println!("No name entered");
-                        break;
-                    }
-
-                    let unwrapped = get_rename_prompt_result.unwrap();
-                    new_name = unwrapped
-                        .chars()
-                        .filter(|c| {
-                            (c.is_alphabetic() || c.is_numeric() || c.eq(&'-') || c.eq(&'_'))
-                        })
-                        .collect();
-
-                    if new_name.is_empty() {
-                        println!("Name was not valid");
-                        break;
-                    }
-
-                    let message =
-                        format!("We will rename the map to {}.\nThis process will create a temporary map copy which you can delete after.\nDo you wish to continue?", new_name);
-
-                    let info_prompt = Confirm::new(&message.as_str())
-                        .with_placeholder("No")
-                        .with_default(false);
-                    let confirmation = prompt_user(info_prompt);
-                    if confirmation.is_none() || confirmation.unwrap() == false {
-                        break;
-                    }
-
-                    println!("(0/6) -> Starting map rename");
-                    println!("(1/6) -> Creating temporary duplicate map");
-                    let temp_map = twilio
-                        .sync()
-                        .service(&sync_service.sid)
-                        .maps()
-                        .create(CreateMapParams {
-                            unique_name: Some(String::from("test-temp")),
-                            ttl: None,
-                        })
-                        .await
-                        .unwrap_or_else(|error| panic!("{}", error));
-                    println!("(2/6) -> Cloning items to temporary map");
-                    let items = twilio
-                        .sync()
-                        .service(&sync_service.sid)
-                        .map(&selected_sync_map.sid)
-                        .mapitems()
-                        .list(ListParams {
-                            from: None,
-                            bounds: None,
-                            order: None,
-                        })
-                        .await
-                        .unwrap_or_else(|error| panic!("{}", error));
-                    let mut items_iter = items.into_iter();
-                    while let Some(item) = items_iter.next() {
-                        twilio
-                            .sync()
-                            .service(&sync_service.sid)
-                            .map(&temp_map.sid)
-                            .mapitems()
-                            .create(CreateMapItemParams {
-                                key: item.key,
-                                ttl: None,
-                                collection_ttl: None,
-                                data: &item.data,
-                            })
-                            .await
-                            .unwrap_or_else(|error| panic!("{}", error));
-                    }
-                    println!("(3/6) -> Deleting original map");
-                    println!("(4/6) -> Creating renamed map");
-                    println!("(5/6) -> Cloning items to renamed map");
-                    println!("(6/6) -> Done");
                 }
                 Action::Delete => {
                     let confirm_prompt =
