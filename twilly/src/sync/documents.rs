@@ -56,10 +56,10 @@ pub struct CreateParams<'a, T>
 where
     T: ?Sized + Serialize,
 {
-    unique_name: Option<String>,
-    data: &'a T,
+    pub unique_name: Option<String>,
+    pub data: &'a T,
     /// How long the Document should exist before deletion (in seconds).
-    ttl: Option<u16>,
+    pub ttl: Option<u16>,
 }
 
 /// Parameters for creating a Sync Document with
@@ -67,7 +67,7 @@ where
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct CreateParamsWithJson {
+struct CreateParamsWithJson {
     unique_name: Option<String>,
     data: String,
     /// How long the Document should exist before deletion (in seconds).
@@ -79,11 +79,11 @@ pub struct UpdateParams<'a, T>
 where
     T: ?Sized + Serialize,
 {
-    if_match: Option<String>,
+    pub if_match: Option<String>,
     /// Any value that can be represented as JSON
-    data: &'a T,
+    pub data: &'a T,
     /// How long the Document should exist before deletion (in seconds).
-    ttl: Option<u16>,
+    pub ttl: Option<u16>,
 }
 
 /// Parameters for creating a Sync Document with
@@ -91,7 +91,7 @@ where
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct UpdateParamsWithJson {
+struct UpdateParamsWithJson {
     #[serde(rename(serialize = "If-Match"))]
     if_match: Option<String>,
     /// Any value that can be represented as JSON

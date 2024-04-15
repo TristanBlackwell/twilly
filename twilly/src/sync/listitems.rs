@@ -41,19 +41,19 @@ pub struct CreateParams<'a, T>
 where
     T: ?Sized + Serialize,
 {
-    data: &'a T,
+    pub data: &'a T,
     /// How long the List Item should exist before deletion (in seconds).
-    ttl: Option<u16>,
+    pub ttl: Option<u16>,
     /// How long the *parent* List resource should exist before deletion (in seconds).
-    collection_ttl: Option<u16>,
+    pub collection_ttl: Option<u16>,
 }
 
-/// Parameters for creating a Sync Document with
+/// Parameters for creating a Sync List with
 /// data converted to a JSON string
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct CreateParamsWithJson {
+struct CreateParamsWithJson {
     data: String,
     /// How long the List Item should exist before deletion (in seconds).
     ttl: Option<u16>,
@@ -86,21 +86,21 @@ pub struct ListParams {
     pub bounds: Option<Bounds>,
 }
 
-/// Parameters for updating a Sync Map Item
+/// Parameters for updating a Sync Map List
 pub struct UpdateParams<'a, T>
 where
     T: ?Sized + Serialize,
 {
-    if_match: Option<String>,
-    data: &'a T,
-    /// How long the Map Item should exist before deletion (in seconds).
-    ttl: Option<u16>,
-    /// How long the *parent* Map resource should exist before deletion (in seconds). Can only be used
+    pub if_match: Option<String>,
+    pub data: &'a T,
+    /// How long the List Item should exist before deletion (in seconds).
+    pub ttl: Option<u16>,
+    /// How long the *parent* List resource should exist before deletion (in seconds). Can only be used
     /// if the `data` or `ttl` is updated in the same request.
-    collection_ttl: Option<u16>,
+    pub collection_ttl: Option<u16>,
 }
 
-/// Parameters for creating a Sync Document with
+/// Parameters for creating a Sync List with
 /// data converted to a JSON string
 #[skip_serializing_none]
 #[derive(Serialize)]
@@ -109,9 +109,9 @@ struct UpdateParamsWithJson {
     #[serde(rename(serialize = "If-Match"))]
     if_match: Option<String>,
     data: String,
-    /// How long the Map Item should exist before deletion (in seconds).
+    /// How long the List Item should exist before deletion (in seconds).
     ttl: Option<u16>,
-    /// How long the *parent* Map resource should exist before deletion (in seconds). Can only be used
+    /// How long the *parent* List resource should exist before deletion (in seconds). Can only be used
     /// if the `data` or `ttl` is updated in the same request.
     collection_ttl: Option<u16>,
 }

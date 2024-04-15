@@ -57,14 +57,14 @@ where
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct CreateParamsWithJson {
-    pub key: String,
+struct CreateParamsWithJson {
+    key: String,
     /// JSON string of data
-    pub data: String,
+    data: String,
     /// How long the Map Item should exist before deletion (in seconds).
-    pub ttl: Option<u16>,
+    ttl: Option<u16>,
     /// How long the *parent* Map resource should exist before deletion (in seconds).
-    pub collection_ttl: Option<u16>,
+    collection_ttl: Option<u16>,
 }
 
 #[derive(Serialize)]
@@ -97,14 +97,14 @@ pub struct UpdateParams<'a, T>
 where
     T: ?Sized + Serialize,
 {
-    if_match: Option<String>,
+    pub if_match: Option<String>,
     /// Any value that can be represented as JSON
     pub data: &'a T,
     /// How long the Map Item should exist before deletion (in seconds).
-    ttl: Option<u16>,
+    pub ttl: Option<u16>,
     /// How long the *parent* Map resource should exist before deletion (in seconds). Can only be used
     /// if the `data` or `ttl` is updated in the same request.
-    collection_ttl: Option<u16>,
+    pub collection_ttl: Option<u16>,
 }
 
 /// Parameters for updating a Sync Map Item with
@@ -112,11 +112,11 @@ where
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct UpdateParamsWithJson {
+struct UpdateParamsWithJson {
     #[serde(rename(serialize = "If-Match"))]
     if_match: Option<String>,
     /// Any value that can be represented as JSON
-    pub data: String,
+    data: String,
     /// How long the Map Item should exist before deletion (in seconds).
     ttl: Option<u16>,
     /// How long the *parent* Map resource should exist before deletion (in seconds). Can only be used
