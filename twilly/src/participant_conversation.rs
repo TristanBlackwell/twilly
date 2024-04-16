@@ -32,9 +32,9 @@ pub struct ParticipantConversation {
     pub account_sid: String,
     pub chat_service_sid: String,
     pub participant_sid: String,
-    pub participant_user_sid: String,
-    pub participant_identity: String,
-    pub participant_messaging_binding: ParticipantMessagingBinding,
+    pub participant_user_sid: Option<String>,
+    pub participant_identity: Option<String>,
+    pub participant_messaging_binding: Option<ParticipantMessagingBinding>,
     pub conversation_sid: String,
     pub conversation_unique_name: Option<String>,
     pub conversation_friendly_name: Option<String>,
@@ -47,19 +47,20 @@ pub struct ParticipantConversation {
     pub links: Links,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
 pub struct ParticipantMessagingBinding {
     pub address: String,
     pub proxy_address: String,
     #[serde(rename = "type")]
     pub type_field: String,
-    level: Option<String>,
-    name: Option<String>,
-    projected_address: Option<String>,
+    pub level: Option<String>,
+    pub name: Option<String>,
+    pub projected_address: Option<String>,
 }
 
 /// Resources _linked_ to a participants conversation. These can be used to retrieve
 /// sub resources directly.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Default, Debug, Deserialize, PartialEq)]
 pub struct Links {
     pub participant: String,
     pub conversation: String,

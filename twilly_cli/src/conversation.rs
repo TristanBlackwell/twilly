@@ -19,6 +19,8 @@ pub enum Action {
     GetConversation,
     #[strum(to_string = "List Conversations")]
     ListConversations,
+    #[strum(to_string = "List Conversations by identifier")]
+    ListByIdentifier,
     #[strum(to_string = "Delete Conversation")]
     DeleteConversation,
     #[strum(to_string = "Delete all Conversations")]
@@ -437,6 +439,52 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                         },
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+                Action::ListByIdentifier => {
+                    let identifier_selection =
+                        Select::new("Select an identifier:", vec!["Identity", "Address"]);
+
+                    if let Some(identifier) = prompt_user_selection(identifier_selection) {
+                        match identifier {
+                            "Identity" => {
+                                let identity_prompt =
+                                    Text::new("Please provide the identity to search for:");
+
+                                if let Some(identity) = prompt_user(identity_prompt) {
+                                    let conversations = twilio
+                                        .conversations()
+                                        .participant_conversations()
+                                        .list(Some(identity), None)
+                                        .await
+                                        .unwrap_or_else(|error| panic!("{}", error));
+
+                                    conversations
+                                        .into_iter()
+                                        .for_each(|conv| println!("{:#?}", conv.conversation_sid))
+                                }
+                            }
+                            "Address" => {
+                                let address_prompt =
+                                    Text::new("Please provide the address to search for:");
+
+                                if let Some(address) = prompt_user(address_prompt) {
+                                    let conversations = twilio
+                                        .conversations()
+                                        .participant_conversations()
+                                        .list(None, Some(address))
+                                        .await
+                                        .unwrap_or_else(|error| panic!("{}", error));
+
+                                    conversations
+                                        .into_iter()
+                                        .for_each(|conv| println!("{:#?}", conv.conversation_sid));
+                                }
+                            }
+                            _ => {
+                                println!("Unknown identifer '{}'", identifier)
                             }
                         }
                     }
