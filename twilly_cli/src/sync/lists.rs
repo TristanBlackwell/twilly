@@ -1,10 +1,10 @@
 use std::process;
 
-use inquire::{Confirm, Select};
+use inquire::{ Confirm, Select };
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter, EnumString};
-use twilly::{sync::services::SyncService, Client};
-use twilly_cli::{get_action_choice_from_user, prompt_user, prompt_user_selection, ActionChoice};
+use strum_macros::{ Display, EnumIter, EnumString };
+use twilly::{ sync::services::SyncService, Client };
+use twilly_cli::{ get_action_choice_from_user, prompt_user, prompt_user_selection, ActionChoice };
 
 use crate::sync::listitems;
 
@@ -24,8 +24,7 @@ pub async fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
         .sync()
         .service(&sync_service.sid)
         .lists()
-        .list()
-        .await
+        .list().await
         .unwrap_or_else(|error| panic!("{}", error));
 
     if sync_lists.len() == 0 {
@@ -40,13 +39,15 @@ pub async fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
         let selected_sync_list = if let Some(index) = selected_sync_list_index {
             &mut sync_lists[index]
         } else {
-            if let Some(action_choice) = get_action_choice_from_user(
-                sync_lists
-                    .iter()
-                    .map(|list| format!("({}) {}", list.sid, list.unique_name))
-                    .collect::<Vec<String>>(),
-                "Choose a Sync List: ",
-            ) {
+            if
+                let Some(action_choice) = get_action_choice_from_user(
+                    sync_lists
+                        .iter()
+                        .map(|list| format!("({}) {}", list.sid, list.unique_name))
+                        .collect::<Vec<String>>(),
+                    "Choose a Sync List: "
+                )
+            {
                 match action_choice {
                     ActionChoice::Back => {
                         break;
@@ -72,17 +73,23 @@ pub async fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
         if let Some(resource) = prompt_user_selection(resource_selection_prompt) {
             match resource {
                 Action::ListItem => {
-                    listitems::choose_list_item_action(&twilio, sync_service, &selected_sync_list)
-                        .await
+                    listitems::choose_list_item_action(
+                        &twilio,
+                        sync_service,
+                        &selected_sync_list
+                    ).await;
                 }
 
                 Action::ListDetails => {
                     println!("{:#?}", selected_sync_list);
-                    println!()
+                    println!();
                 }
                 Action::Delete => {
-                    let confirm_prompt =
-                        Confirm::new("Are you sure to wish to delete the Sync List? (Yes / No)");
+                    let confirm_prompt = Confirm::new(
+                        "Are you sure to wish to delete the Sync List?"
+                    )
+                        .with_placeholder("N")
+                        .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
                     if confirmation.is_some() && confirmation.unwrap() == true {
                         println!("Deleting Sync List...");
@@ -90,19 +97,21 @@ pub async fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
                             .sync()
                             .service(&sync_service.sid)
                             .list(&selected_sync_list.sid)
-                            .delete()
-                            .await
+                            .delete().await
                             .unwrap_or_else(|error| panic!("{}", error));
                         sync_lists.remove(
-                            selected_sync_list_index
-                                .expect("Could not find Sync List in existing Sync Maps list"),
+                            selected_sync_list_index.expect(
+                                "Could not find Sync List in existing Sync Maps list"
+                            )
                         );
                         println!("Sync List deleted.");
                         println!();
                         break;
                     }
                 }
-                Action::Back => break,
+                Action::Back => {
+                    break;
+                }
                 Action::Exit => process::exit(0),
             }
         }

@@ -1,13 +1,10 @@
 use std::process;
 
-use inquire::{Confirm, Select};
+use inquire::{ Confirm, Select };
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter, EnumString};
-use twilly::{
-    sync::{mapitems::ListParams, maps::SyncMap, services::SyncService},
-    Client,
-};
-use twilly_cli::{get_action_choice_from_user, prompt_user, prompt_user_selection, ActionChoice};
+use strum_macros::{ Display, EnumIter, EnumString };
+use twilly::{ sync::{ mapitems::ListParams, maps::SyncMap, services::SyncService }, Client };
+use twilly_cli::{ get_action_choice_from_user, prompt_user, prompt_user_selection, ActionChoice };
 
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum Action {
@@ -28,8 +25,7 @@ pub async fn choose_map_item_action(twilio: &Client, sync_service: &SyncService,
             order: None,
             bounds: None,
             from: None,
-        })
-        .await
+        }).await
         .unwrap_or_else(|error| panic!("{}", error));
 
     if sync_map_items.len() == 0 {
@@ -44,13 +40,15 @@ pub async fn choose_map_item_action(twilio: &Client, sync_service: &SyncService,
         let selected_sync_map_item = if let Some(index) = selected_sync_map_index {
             &mut sync_map_items[index]
         } else {
-            if let Some(action_choice) = get_action_choice_from_user(
-                sync_map_items
-                    .iter()
-                    .map(|map_item| format!("{}", map_item.key))
-                    .collect::<Vec<String>>(),
-                "Choose a Sync Map item: ",
-            ) {
+            if
+                let Some(action_choice) = get_action_choice_from_user(
+                    sync_map_items
+                        .iter()
+                        .map(|map_item| format!("{}", map_item.key))
+                        .collect::<Vec<String>>(),
+                    "Choose a Sync Map item: "
+                )
+            {
                 match action_choice {
                     ActionChoice::Back => {
                         break;
@@ -77,12 +75,14 @@ pub async fn choose_map_item_action(twilio: &Client, sync_service: &SyncService,
             match resource {
                 Action::ListDetails => {
                     println!("{:#?}", selected_sync_map_item);
-                    println!()
+                    println!();
                 }
                 Action::Delete => {
                     let confirm_prompt = Confirm::new(
-                        "Are you sure to wish to delete the Sync Map item? (Yes / No)",
-                    );
+                        "Are you sure to wish to delete the Sync Map item?"
+                    )
+                        .with_placeholder("N")
+                        .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
                     if confirmation.is_some() && confirmation.unwrap() == true {
                         println!("Deleting Sync Map item...");
@@ -91,18 +91,21 @@ pub async fn choose_map_item_action(twilio: &Client, sync_service: &SyncService,
                             .service(&sync_service.sid)
                             .map(&map.sid)
                             .mapitem(&selected_sync_map_item.key)
-                            .delete()
-                            .await
+                            .delete().await
                             .unwrap_or_else(|error| panic!("{}", error));
-                        sync_map_items.remove(selected_sync_map_index.expect(
-                            "Could not find Sync Map item in existing Sync Map items list",
-                        ));
+                        sync_map_items.remove(
+                            selected_sync_map_index.expect(
+                                "Could not find Sync Map item in existing Sync Map items list"
+                            )
+                        );
                         println!("Sync Map item deleted.");
                         println!();
                         break;
                     }
                 }
-                Action::Back => break,
+                Action::Back => {
+                    break;
+                }
                 Action::Exit => process::exit(0),
             }
         }
