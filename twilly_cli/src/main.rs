@@ -30,7 +30,8 @@ async fn main() {
         if Confirm::new(&format!(
             "Account ({}) found in memory. Use this profile?",
             config.account_sid
-        )).with_default(true)
+        ))
+        .with_default(true)
         .with_placeholder("Y")
         .prompt()
         .unwrap()

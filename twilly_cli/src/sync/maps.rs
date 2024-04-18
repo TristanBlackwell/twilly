@@ -1,10 +1,10 @@
 use std::process;
 
-use inquire::{ Confirm, Select };
+use inquire::{Confirm, Select};
 use strum::IntoEnumIterator;
-use strum_macros::{ Display, EnumIter, EnumString };
-use twilly::{ sync::services::SyncService, Client };
-use twilly_cli::{ get_action_choice_from_user, prompt_user, prompt_user_selection, ActionChoice };
+use strum_macros::{Display, EnumIter, EnumString};
+use twilly::{sync::services::SyncService, Client};
+use twilly_cli::{get_action_choice_from_user, prompt_user, prompt_user_selection, ActionChoice};
 
 use crate::sync::mapitems;
 
@@ -24,7 +24,8 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
         .sync()
         .service(&sync_service.sid)
         .maps()
-        .list().await
+        .list()
+        .await
         .unwrap_or_else(|error| panic!("{}", error));
 
     if sync_maps.len() == 0 {
@@ -39,15 +40,13 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
         let selected_sync_map = if let Some(index) = selected_sync_map_index {
             &mut sync_maps[index]
         } else {
-            if
-                let Some(action_choice) = get_action_choice_from_user(
-                    sync_maps
-                        .iter()
-                        .map(|map| format!("({}) {}", map.sid, map.unique_name))
-                        .collect::<Vec<String>>(),
-                    "Choose a Sync Map: "
-                )
-            {
+            if let Some(action_choice) = get_action_choice_from_user(
+                sync_maps
+                    .iter()
+                    .map(|map| format!("({}) {}", map.sid, map.unique_name))
+                    .collect::<Vec<String>>(),
+                "Choose a Sync Map: ",
+            ) {
                 match action_choice {
                     ActionChoice::Back => {
                         break;
@@ -73,11 +72,8 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
         if let Some(resource) = prompt_user_selection(resource_selection_prompt) {
             match resource {
                 Action::MapItem => {
-                    mapitems::choose_map_item_action(
-                        &twilio,
-                        sync_service,
-                        &selected_sync_map
-                    ).await;
+                    mapitems::choose_map_item_action(&twilio, sync_service, &selected_sync_map)
+                        .await;
                 }
 
                 Action::ListDetails => {
@@ -85,11 +81,10 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                     println!();
                 }
                 Action::Delete => {
-                    let confirm_prompt = Confirm::new(
-                        "Are you sure to wish to delete the Sync Map?"
-                    )
-                        .with_placeholder("N")
-                        .with_default(false);
+                    let confirm_prompt =
+                        Confirm::new("Are you sure to wish to delete the Sync Map?")
+                            .with_placeholder("N")
+                            .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
                     if confirmation.is_some() && confirmation.unwrap() == true {
                         println!("Deleting Sync Map...");
@@ -97,12 +92,12 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                             .sync()
                             .service(&sync_service.sid)
                             .map(&selected_sync_map.sid)
-                            .delete().await
+                            .delete()
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         sync_maps.remove(
-                            selected_sync_map_index.expect(
-                                "Could not find Sync Map in existing Sync Maps list"
-                            )
+                            selected_sync_map_index
+                                .expect("Could not find Sync Map in existing Sync Maps list"),
                         );
                         println!("Sync Map deleted.");
                         println!();

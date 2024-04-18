@@ -1,16 +1,12 @@
-use std::{ process, str::FromStr };
+use std::{process, str::FromStr};
 
-use inquire::{ validator::Validation, Confirm, Select, Text };
+use inquire::{validator::Validation, Confirm, Select, Text};
 use strum::IntoEnumIterator;
-use strum_macros::{ Display, EnumIter, EnumString };
-use twilly::{ account::Status, Client };
+use strum_macros::{Display, EnumIter, EnumString};
+use twilly::{account::Status, Client};
 use twilly_cli::{
-    get_action_choice_from_user,
-    get_filter_choice_from_user,
-    prompt_user,
-    prompt_user_selection,
-    ActionChoice,
-    FilterChoice,
+    get_action_choice_from_user, get_filter_choice_from_user, prompt_user, prompt_user_selection,
+    ActionChoice, FilterChoice,
 };
 
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
@@ -36,77 +32,68 @@ pub async fn choose_account_action(twilio: &Client) {
                 Action::GetAccount => {
                     let account_sid_prompt = Text::new("Please provide an account SID:")
                         .with_placeholder("AC...")
-                        .with_validator(|val: &str| {
-                            match val.starts_with("AC") {
-                                true => Ok(Validation::Valid),
-                                false => {
-                                    Ok(Validation::Invalid("Account SID must start with AC".into()))
-                                }
+                        .with_validator(|val: &str| match val.starts_with("AC") {
+                            true => Ok(Validation::Valid),
+                            false => {
+                                Ok(Validation::Invalid("Account SID must start with AC".into()))
                             }
                         })
-                        .with_validator(|val: &str| {
-                            match val.len() {
-                                34 => Ok(Validation::Valid),
-                                _ =>
-                                    Ok(
-                                        Validation::Invalid(
-                                            "Your SID should be 34 characters in length".into()
-                                        )
-                                    ),
-                            }
+                        .with_validator(|val: &str| match val.len() {
+                            34 => Ok(Validation::Valid),
+                            _ => Ok(Validation::Invalid(
+                                "Your SID should be 34 characters in length".into(),
+                            )),
                         });
 
                     if let Some(account_sid) = prompt_user(account_sid_prompt) {
                         let account = twilio
                             .accounts()
-                            .get(Some(&account_sid)).await
+                            .get(Some(&account_sid))
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         println!("{:#?}", account);
                         println!();
                     }
                 }
                 Action::CreateAccount => {
-                    let friendly_name_prompt = Text::new(
-                        "Enter a friendly name (empty for default):"
-                    );
+                    let friendly_name_prompt =
+                        Text::new("Enter a friendly name (empty for default):");
 
                     if let Some(friendly_name) = prompt_user(friendly_name_prompt) {
                         println!("Creating account...");
                         let account = twilio
                             .accounts()
-                            .create(Some(&friendly_name)).await
+                            .create(Some(&friendly_name))
+                            .await
                             .unwrap_or_else(|error| panic!("{}", error));
-                        println!("Account created: {} ({})", account.friendly_name, account.sid);
+                        println!(
+                            "Account created: {} ({})",
+                            account.friendly_name, account.sid
+                        );
                     }
                 }
                 Action::ListAccounts => {
-                    let friendly_name_prompt = Text::new(
-                        "Search by friendly name? (empty for none):"
-                    );
+                    let friendly_name_prompt =
+                        Text::new("Search by friendly name? (empty for none):");
 
                     if let Some(friendly_name) = prompt_user(friendly_name_prompt) {
-                        if
-                            let Some(filter_choice) = get_filter_choice_from_user(
-                                Status::iter()
-                                    .map(|status| status.to_string())
-                                    .collect(),
-                                "Filter by status: "
-                            )
-                        {
+                        if let Some(filter_choice) = get_filter_choice_from_user(
+                            Status::iter().map(|status| status.to_string()).collect(),
+                            "Filter by status: ",
+                        ) {
                             let status = match filter_choice {
                                 FilterChoice::Any => None,
-                                FilterChoice::Other(choice) =>
-                                    Some(
-                                        Status::from_str(&choice).expect(
-                                            "Unable to determine account status"
-                                        )
-                                    ),
+                                FilterChoice::Other(choice) => Some(
+                                    Status::from_str(&choice)
+                                        .expect("Unable to determine account status"),
+                                ),
                             };
 
                             println!("Retrieving accounts...");
                             let mut accounts = twilio
                                 .accounts()
-                                .list(Some(&friendly_name), status.as_ref()).await
+                                .list(Some(&friendly_name), status.as_ref())
+                                .await
                                 .unwrap_or_else(|error| panic!("{}", error));
 
                             // The action we can perform on the account we are using are limited.
@@ -129,22 +116,18 @@ pub async fn choose_account_action(twilio: &Client) {
                                 let selected_account = if let Some(index) = selected_account_index {
                                     &mut accounts[index]
                                 } else {
-                                    if
-                                        let Some(action_choice) = get_action_choice_from_user(
-                                            accounts
-                                                .iter()
-                                                .map(|ac| {
-                                                    format!(
-                                                        "({}) {} - {}",
-                                                        ac.sid,
-                                                        ac.friendly_name,
-                                                        ac.status
-                                                    )
-                                                })
-                                                .collect::<Vec<String>>(),
-                                            "Accounts: "
-                                        )
-                                    {
+                                    if let Some(action_choice) = get_action_choice_from_user(
+                                        accounts
+                                            .iter()
+                                            .map(|ac| {
+                                                format!(
+                                                    "({}) {} - {}",
+                                                    ac.sid, ac.friendly_name, ac.status
+                                                )
+                                            })
+                                            .collect::<Vec<String>>(),
+                                        "Accounts: ",
+                                    ) {
                                         match action_choice {
                                             ActionChoice::Back => {
                                                 break;
@@ -171,16 +154,14 @@ pub async fn choose_account_action(twilio: &Client) {
 
                                 match selected_account.status.as_str() {
                                     "active" => {
-                                        if
-                                            let Some(account_action) = get_action_choice_from_user(
-                                                vec![
-                                                    "Change name".into(),
-                                                    "Suspend".into(),
-                                                    "Close".into()
-                                                ],
-                                                "Select an action: "
-                                            )
-                                        {
+                                        if let Some(account_action) = get_action_choice_from_user(
+                                            vec![
+                                                "Change name".into(),
+                                                "Suspend".into(),
+                                                "Close".into(),
+                                            ],
+                                            "Select an action: ",
+                                        ) {
                                             match account_action {
                                                 ActionChoice::Back => {
                                                     break;
@@ -191,35 +172,38 @@ pub async fn choose_account_action(twilio: &Client) {
                                                         "Change name" => {
                                                             change_account_name(
                                                                 twilio,
-                                                                &selected_account.sid
-                                                            ).await;
-                                                            accounts[
-                                                                selected_account_index.expect(
-                                                                    "Selected account is unknown"
-                                                                )
-                                                            ].friendly_name = friendly_name.clone();
+                                                                &selected_account.sid,
+                                                            )
+                                                            .await;
+                                                            accounts[selected_account_index
+                                                                .expect(
+                                                                    "Selected account is unknown",
+                                                                )]
+                                                            .friendly_name = friendly_name.clone();
                                                         }
                                                         "Suspend" => {
                                                             suspend_account(
                                                                 twilio,
-                                                                &selected_account.sid
-                                                            ).await;
-                                                            accounts[
-                                                                selected_account_index.expect(
-                                                                    "Selected account is unknown"
-                                                                )
-                                                            ].status = Status::Suspended;
+                                                                &selected_account.sid,
+                                                            )
+                                                            .await;
+                                                            accounts[selected_account_index
+                                                                .expect(
+                                                                    "Selected account is unknown",
+                                                                )]
+                                                            .status = Status::Suspended;
                                                         }
                                                         "Close" => {
                                                             close_account(
                                                                 twilio,
-                                                                &selected_account.sid
-                                                            ).await;
-                                                            accounts[
-                                                                selected_account_index.expect(
-                                                                    "Selected account is unknown"
-                                                                )
-                                                            ].status = Status::Closed;
+                                                                &selected_account.sid,
+                                                            )
+                                                            .await;
+                                                            accounts[selected_account_index
+                                                                .expect(
+                                                                    "Selected account is unknown",
+                                                                )]
+                                                            .status = Status::Closed;
                                                         }
                                                         _ => {
                                                             println!("Unknown action '{}'", choice);
@@ -232,12 +216,10 @@ pub async fn choose_account_action(twilio: &Client) {
                                         }
                                     }
                                     "suspended" => {
-                                        if
-                                            let Some(account_action) = get_action_choice_from_user(
-                                                vec!["Change name".into(), "Activate".into()],
-                                                "Select an action: "
-                                            )
-                                        {
+                                        if let Some(account_action) = get_action_choice_from_user(
+                                            vec!["Change name".into(), "Activate".into()],
+                                            "Select an action: ",
+                                        ) {
                                             match account_action {
                                                 ActionChoice::Back => {
                                                     break;
@@ -248,24 +230,26 @@ pub async fn choose_account_action(twilio: &Client) {
                                                         "Change name" => {
                                                             change_account_name(
                                                                 twilio,
-                                                                &selected_account.sid
-                                                            ).await;
-                                                            accounts[
-                                                                selected_account_index.expect(
-                                                                    "Selected account is unknown"
-                                                                )
-                                                            ].friendly_name = friendly_name.clone();
+                                                                &selected_account.sid,
+                                                            )
+                                                            .await;
+                                                            accounts[selected_account_index
+                                                                .expect(
+                                                                    "Selected account is unknown",
+                                                                )]
+                                                            .friendly_name = friendly_name.clone();
                                                         }
                                                         "Activate" => {
                                                             activate_account(
                                                                 twilio,
-                                                                &selected_account.sid
-                                                            ).await;
-                                                            accounts[
-                                                                selected_account_index.expect(
-                                                                    "Selected account is unknown"
-                                                                )
-                                                            ].status = Status::Active;
+                                                                &selected_account.sid,
+                                                            )
+                                                            .await;
+                                                            accounts[selected_account_index
+                                                                .expect(
+                                                                    "Selected account is unknown",
+                                                                )]
+                                                            .status = Status::Active;
                                                         }
 
                                                         _ => {
@@ -307,18 +291,18 @@ pub async fn choose_account_action(twilio: &Client) {
 }
 
 async fn change_account_name(twilio: &Client, account_sid: &str) {
-    let friendly_name_prompt = Text::new("Provide a name:").with_validator(|val: &str| {
-        match val.len() > 0 {
+    let friendly_name_prompt =
+        Text::new("Provide a name:").with_validator(|val: &str| match val.len() > 0 {
             true => Ok(Validation::Valid),
             false => Ok(Validation::Invalid("Enter at least one character".into())),
-        }
-    });
+        });
 
     if let Some(friendly_name) = prompt_user(friendly_name_prompt) {
         println!("Updating account...");
         let updated_account = twilio
             .accounts()
-            .update(account_sid, Some(&friendly_name), None).await
+            .update(account_sid, Some(&friendly_name), None)
+            .await
             .unwrap_or_else(|error| panic!("{}", error));
 
         println!("{:#?}", updated_account);
@@ -336,7 +320,8 @@ async fn activate_account(twilio: &Client, account_sid: &str) {
             println!("Activating account...");
             twilio
                 .accounts()
-                .update(account_sid, None, Some(&Status::Suspended)).await
+                .update(account_sid, None, Some(&Status::Suspended))
+                .await
                 .unwrap_or_else(|error| panic!("{}", error));
 
             println!("Account activated.");
@@ -359,7 +344,8 @@ async fn suspend_account(twilio: &Client, account_sid: &str) {
             println!("Suspending account...");
             let res = twilio
                 .accounts()
-                .update(account_sid, None, Some(&Status::Suspended)).await
+                .update(account_sid, None, Some(&Status::Suspended))
+                .await
                 .unwrap_or_else(|error| panic!("{}", error));
 
             println!("{}", res);
@@ -383,7 +369,8 @@ async fn close_account(twilio: &Client, account_sid: &str) {
             println!("Closing account...");
             twilio
                 .accounts()
-                .update(account_sid, None, Some(&Status::Suspended)).await
+                .update(account_sid, None, Some(&Status::Suspended))
+                .await
                 .unwrap_or_else(|error| panic!("{}", error));
 
             println!(
