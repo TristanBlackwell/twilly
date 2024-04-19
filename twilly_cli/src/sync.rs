@@ -73,7 +73,9 @@ pub async fn choose_sync_resource(twilio: &Client) {
 
                             if let Some(friendly_name) = prompt_user(friendly_name_prompt) {
                                 let acl_confirmation_prompt =
-                                    Confirm::new("Would you like to enable ACL? (Yes / No)");
+                                    Confirm::new("Would you like to enable ACL?")
+                                        .with_placeholder("Y")
+                                        .with_default(true);
 
                                 if let Some(acl_confirmation) = prompt_user(acl_confirmation_prompt)
                                 {
@@ -123,17 +125,19 @@ pub async fn choose_sync_resource(twilio: &Client) {
         if let Some(resource) = prompt_user_selection(resource_selection_prompt) {
             match resource {
                 Action::Document => {
-                    documents::choose_document_action(&twilio, selected_sync_service).await
+                    documents::choose_document_action(&twilio, selected_sync_service).await;
                 }
                 Action::Map => maps::choose_map_action(&twilio, selected_sync_service).await,
                 Action::List => lists::choose_list_action(&twilio, selected_sync_service).await,
                 Action::ListDetails => {
                     println!("{:#?}", selected_sync_service);
-                    println!()
+                    println!();
                 }
                 Action::Delete => {
                     let confirm_prompt =
-                        Confirm::new("Are you sure to wish to delete the Sync Service? (Yes / No)");
+                        Confirm::new("Are you sure to wish to delete the Sync Service?")
+                            .with_placeholder("N")
+                            .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
                     if confirmation.is_some() && confirmation.unwrap() == true {
                         println!("Deleting Sync Service...");
@@ -153,7 +157,9 @@ pub async fn choose_sync_resource(twilio: &Client) {
                         break;
                     }
                 }
-                Action::Back => break,
+                Action::Back => {
+                    break;
+                }
                 Action::Exit => process::exit(0),
             }
         }

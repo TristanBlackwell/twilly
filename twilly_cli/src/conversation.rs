@@ -60,7 +60,9 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                     "Select an action: ",
                                 ) {
                                     match action_choice {
-                                        ActionChoice::Back => break,
+                                        ActionChoice::Back => {
+                                            break;
+                                        }
                                         ActionChoice::Exit => process::exit(0),
                                         ActionChoice::Other(choice) => match choice.as_str() {
                                             "List Details" => {
@@ -69,8 +71,10 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                             }
                                             "Delete" => {
                                                 let confirm_prompt = Confirm::new(
-                                                "Are you sure to wish to delete the Conversation? (Yes / No)",
-                                            );
+                                                        "Are you sure to wish to delete the Conversation?"
+                                                    )
+                                                        .with_placeholder("N")
+                                                        .with_default(false);
                                                 let confirmation = prompt_user(confirm_prompt);
                                                 if confirmation.is_some()
                                                     && confirmation.unwrap() == true
@@ -103,7 +107,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                         );
                                         println!("");
                                     } else {
-                                        panic!("{}", twilio_error)
+                                        panic!("{}", twilio_error);
                                     }
                                 }
                                 _ => panic!("{}", error),
@@ -117,9 +121,10 @@ pub async fn choose_conversation_action(twilio: &Client) {
 
                     let mut user_filtered_dates = false;
 
-                    let filter_dates_prompt = Confirm::new(
-                        "Would you like to filter between specified dates? (Yes / No)",
-                    );
+                    let filter_dates_prompt =
+                        Confirm::new("Would you like to filter between specified dates?")
+                            .with_placeholder("N")
+                            .with_default(false);
 
                     if let Some(decision) = prompt_user(filter_dates_prompt) {
                         if decision == true {
@@ -168,7 +173,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                     // Only continue if the user filtered by dates *and* provided both options.
                     // If they didn't then they must of cancelled the operation.
                     if !user_filtered_dates
-                        || user_filtered_dates && (start_date.is_some() && end_date.is_some())
+                        || (user_filtered_dates && start_date.is_some() && end_date.is_some())
                     {
                         if let Some(filter_choice) = get_filter_choice_from_user(
                             State::iter().map(|state| state.to_string()).collect(),
@@ -234,7 +239,9 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                                     let conversation_position = conversations
                                                         .iter()
                                                         .position(|conv| conv.sid == choice[..34])
-                                                        .expect("Could not find conversation in existing conversation list");
+                                                        .expect(
+                                                            "Could not find conversation in existing conversation list"
+                                                        );
 
                                                     selected_conversation_index =
                                                         Some(conversation_position);
@@ -280,14 +287,15 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                                             )
                                                             .await;
                                                             conversations.remove(
-                                                                selected_conversation_index
-                                                                    .expect("Could not find conversation in existing conversation list"),
-                                                            );
+                                                                        selected_conversation_index.expect(
+                                                                            "Could not find conversation in existing conversation list"
+                                                                        )
+                                                                    );
                                                             selected_conversation_index = None;
                                                             break;
                                                         }
                                                         _ => {
-                                                            println!("Unknown action '{}'", choice)
+                                                            println!("Unknown action '{}'", choice);
                                                         }
                                                     },
                                                 }
@@ -337,10 +345,11 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                                                     },
                                                                 )
                                                                 .await;
-                                                            conversations
-                                                                [selected_conversation_index
-                                                                    .expect("Could not find conversation in existing conversation list")] =
-                                                                updated_conversation;
+                                                            conversations[
+                                                                        selected_conversation_index.expect(
+                                                                            "Could not find conversation in existing conversation list"
+                                                                        )
+                                                                    ] = updated_conversation;
                                                             break;
                                                         }
                                                         "Delete" => {
@@ -350,14 +359,15 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                                             )
                                                             .await;
                                                             conversations.remove(
-                                                                selected_conversation_index
-                                                                    .expect("Could not find conversation in existing conversation list"),
-                                                            );
+                                                                        selected_conversation_index.expect(
+                                                                            "Could not find conversation in existing conversation list"
+                                                                        )
+                                                                    );
                                                             selected_conversation_index = None;
                                                             break;
                                                         }
                                                         _ => {
-                                                            println!("Unknown action '{}'", choice)
+                                                            println!("Unknown action '{}'", choice);
                                                         }
                                                     },
                                                 }
@@ -409,10 +419,11 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                                                     },
                                                                 )
                                                                 .await;
-                                                            conversations
-                                                                [selected_conversation_index
-                                                                    .expect("Could not find conversation in existing conversation list")] =
-                                                                updated_conversation;
+                                                            conversations[
+                                                                        selected_conversation_index.expect(
+                                                                            "Could not find conversation in existing conversation list"
+                                                                        )
+                                                                    ] = updated_conversation;
                                                             break;
                                                         }
                                                         "Delete" => {
@@ -422,14 +433,15 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                                             )
                                                             .await;
                                                             conversations.remove(
-                                                                selected_conversation_index
-                                                                    .expect("Could not find conversation in existing conversation list"),
-                                                            );
+                                                                        selected_conversation_index.expect(
+                                                                            "Could not find conversation in existing conversation list"
+                                                                        )
+                                                                    );
                                                             selected_conversation_index = None;
                                                             break;
                                                         }
                                                         _ => {
-                                                            println!("Unknown action '{}'", choice)
+                                                            println!("Unknown action '{}'", choice);
                                                         }
                                                     },
                                                 }
@@ -462,11 +474,14 @@ pub async fn choose_conversation_action(twilio: &Client) {
                     }
                 }
                 Action::DeleteAllConversations => {
-                    let first_confirmation_prompt = Confirm::new(
-                        "Are you sure to wish to delete **all** Conversations? (Yes / No)",
-                    );
+                    let first_confirmation_prompt =
+                        Confirm::new("Are you sure to wish to delete **all** Conversations?")
+                            .with_placeholder("N")
+                            .with_default(false);
                     let second_confirmation_prompt =
-                        Confirm::new("Are you double sure? There is no going back. (Yes / No)");
+                        Confirm::new("Are you double sure? There is no going back.")
+                            .with_placeholder("N")
+                            .with_default(false);
 
                     if let Some(first_confirmation) = prompt_user(first_confirmation_prompt) {
                         if first_confirmation == true {
@@ -504,7 +519,9 @@ pub async fn choose_conversation_action(twilio: &Client) {
                     println!("Operation canceled. No changes were made.");
                     println!("");
                 }
-                Action::Back => break,
+                Action::Back => {
+                    break;
+                }
                 Action::Exit => process::exit(0),
             }
         } else {
@@ -534,8 +551,9 @@ async fn update_conversation(
 /// Prompts the user for confirmation before deleting the conversation with
 /// the SID provided. Will panic if the delete operation fails.
 async fn delete_conversation(twilio: &Client, sid: &str) {
-    let confirmation_prompt =
-        Confirm::new("Are you sure to wish to delete the Conversation? (Yes / No)");
+    let confirmation_prompt = Confirm::new("Are you sure to wish to delete the Conversation?")
+        .with_placeholder("N")
+        .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
         if confirmation == true {

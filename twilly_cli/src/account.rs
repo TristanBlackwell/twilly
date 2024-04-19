@@ -136,8 +136,12 @@ pub async fn choose_account_action(twilio: &Client) {
                                             ActionChoice::Other(choice) => {
                                                 let account_position = accounts
                                                     .iter()
-                                                    .position(|account| account.sid == choice[1..35])
-                                                    .expect("Could not find account in existing account list");
+                                                    .position(
+                                                        |account| account.sid == choice[1..35]
+                                                    )
+                                                    .expect(
+                                                        "Could not find account in existing account list"
+                                                    );
 
                                                 selected_account_index = Some(account_position);
                                                 &mut accounts[account_position]
@@ -159,7 +163,9 @@ pub async fn choose_account_action(twilio: &Client) {
                                             "Select an action: ",
                                         ) {
                                             match account_action {
-                                                ActionChoice::Back => break,
+                                                ActionChoice::Back => {
+                                                    break;
+                                                }
                                                 ActionChoice::Exit => process::exit(0),
                                                 ActionChoice::Other(choice) => {
                                                     match choice.as_str() {
@@ -200,7 +206,7 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             .status = Status::Closed;
                                                         }
                                                         _ => {
-                                                            println!("Unknown action '{}'", choice)
+                                                            println!("Unknown action '{}'", choice);
                                                         }
                                                     }
                                                 }
@@ -215,7 +221,9 @@ pub async fn choose_account_action(twilio: &Client) {
                                             "Select an action: ",
                                         ) {
                                             match account_action {
-                                                ActionChoice::Back => break,
+                                                ActionChoice::Back => {
+                                                    break;
+                                                }
                                                 ActionChoice::Exit => process::exit(0),
                                                 ActionChoice::Other(choice) => {
                                                     match choice.as_str() {
@@ -245,7 +253,7 @@ pub async fn choose_account_action(twilio: &Client) {
                                                         }
 
                                                         _ => {
-                                                            println!("Unknown action '{}'", choice)
+                                                            println!("Unknown action '{}'", choice);
                                                         }
                                                     }
                                                 }
@@ -271,7 +279,9 @@ pub async fn choose_account_action(twilio: &Client) {
                         }
                     }
                 }
-                Action::Back => break,
+                Action::Back => {
+                    break;
+                }
                 Action::Exit => process::exit(0),
             }
         } else {
@@ -301,8 +311,9 @@ async fn change_account_name(twilio: &Client, account_sid: &str) {
 }
 
 async fn activate_account(twilio: &Client, account_sid: &str) {
-    let confirmation_prompt =
-        Confirm::new("Are you sure you wish to activate this account? (Yes / No)");
+    let confirmation_prompt = Confirm::new("Are you sure you wish to activate this account?")
+        .with_placeholder("N")
+        .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
         if confirmation == true {
@@ -322,8 +333,11 @@ async fn activate_account(twilio: &Client, account_sid: &str) {
 }
 
 async fn suspend_account(twilio: &Client, account_sid: &str) {
-    let confirmation_prompt =
-        Confirm::new("Are you sure you wish to suspend this account? Any activity will be disabled until the account is re-activated. (Yes / No)");
+    let confirmation_prompt = Confirm::new(
+        "Are you sure you wish to suspend this account? Any activity will be disabled until the account is re-activated."
+    )
+        .with_placeholder("N")
+        .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
         if confirmation == true {
@@ -344,8 +358,11 @@ async fn suspend_account(twilio: &Client, account_sid: &str) {
 }
 
 async fn close_account(twilio: &Client, account_sid: &str) {
-    let confirmation_prompt =
-        Confirm::new("Are you sure you wish to Close this account? Activity will be disabled and this action cannot be reversed. (Yes / No)");
+    let confirmation_prompt = Confirm::new(
+        "Are you sure you wish to Close this account? Activity will be disabled and this action cannot be reversed."
+    )
+        .with_placeholder("N")
+        .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
         if confirmation == true {

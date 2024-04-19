@@ -77,12 +77,13 @@ pub async fn choose_map_item_action(twilio: &Client, sync_service: &SyncService,
             match resource {
                 Action::ListDetails => {
                     println!("{:#?}", selected_sync_map_item);
-                    println!()
+                    println!();
                 }
                 Action::Delete => {
-                    let confirm_prompt = Confirm::new(
-                        "Are you sure to wish to delete the Sync Map item? (Yes / No)",
-                    );
+                    let confirm_prompt =
+                        Confirm::new("Are you sure to wish to delete the Sync Map item?")
+                            .with_placeholder("N")
+                            .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
                     if confirmation.is_some() && confirmation.unwrap() == true {
                         println!("Deleting Sync Map item...");
@@ -102,7 +103,9 @@ pub async fn choose_map_item_action(twilio: &Client, sync_service: &SyncService,
                         break;
                     }
                 }
-                Action::Back => break,
+                Action::Back => {
+                    break;
+                }
                 Action::Exit => process::exit(0),
             }
         }

@@ -55,7 +55,9 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                     "Select an action: ",
                                 ) {
                                     match action_choice {
-                                        ActionChoice::Back => break,
+                                        ActionChoice::Back => {
+                                            break;
+                                        }
                                         ActionChoice::Exit => process::exit(0),
                                         ActionChoice::Other(choice) => match choice.as_str() {
                                             "List Details" => {
@@ -64,8 +66,10 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                             }
                                             "Delete" => {
                                                 let confirm_prompt = Confirm::new(
-                                                "Are you sure to wish to delete the Document? (Yes / No)",
-                                            );
+                                                    "Are you sure to wish to delete the Document?",
+                                                )
+                                                .with_placeholder("N")
+                                                .with_default(false);
                                                 let confirmation = prompt_user(confirm_prompt);
                                                 if confirmation.is_some()
                                                     && confirmation.unwrap() == true
@@ -99,7 +103,7 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                         );
                                         println!("");
                                     } else {
-                                        panic!("{}", twilio_error)
+                                        panic!("{}", twilio_error);
                                     }
                                 }
                                 _ => panic!("{}", error),
@@ -144,9 +148,11 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                         ActionChoice::Exit => process::exit(0),
                                         ActionChoice::Other(choice) => {
                                             let document_position = documents
-											.iter()
-											.position(|doc| doc.sid == choice[1..35])
-											.expect("Could not find document in existing documents list");
+                                                .iter()
+                                                .position(|doc| doc.sid == choice[1..35])
+                                                .expect(
+                                                    "Could not find document in existing documents list"
+                                                );
                                             selected_document_index = Some(document_position);
                                             &mut documents[document_position]
                                         }
@@ -174,8 +180,10 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                             }
                                             "Delete" => {
                                                 let confirm_prompt = Confirm::new(
-                                                "Are you sure to wish to delete the Document? (Yes / No)",
-                                            );
+                                                    "Are you sure to wish to delete the Document?",
+                                                )
+                                                .with_placeholder("N")
+                                                .with_default(false);
                                                 let confirmation = prompt_user(confirm_prompt);
                                                 if confirmation.is_some()
                                                     && confirmation.unwrap() == true
@@ -190,7 +198,11 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                                         .unwrap_or_else(|error| {
                                                             panic!("{}", error)
                                                         });
-                                                    documents.remove(selected_document_index.expect("Could not fin document in existing documents list"));
+                                                    documents.remove(
+                                                            selected_document_index.expect(
+                                                                "Could not fin document in existing documents list"
+                                                            )
+                                                        );
                                                     selected_document_index = None;
                                                     println!("Document deleted.");
                                                     println!();
@@ -205,7 +217,9 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                         }
                     }
                 }
-                Action::Back => break,
+                Action::Back => {
+                    break;
+                }
                 Action::Exit => process::exit(0),
             }
         } else {

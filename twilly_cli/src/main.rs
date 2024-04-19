@@ -28,9 +28,11 @@ async fn main() {
         config = request_credentials();
     } else {
         if Confirm::new(&format!(
-            "Account ({}) found in memory. Use this profile? (Yes / No)",
+            "Account ({}) found in memory. Use this profile?",
             config.account_sid
         ))
+        .with_default(true)
+        .with_placeholder("Y")
         .prompt()
         .unwrap()
         {
