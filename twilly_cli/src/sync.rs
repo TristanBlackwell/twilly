@@ -132,8 +132,9 @@ pub async fn choose_sync_resource(twilio: &Client) {
                     println!()
                 }
                 Action::Delete => {
-                    let confirm_prompt =
-                        Confirm::new("Are you sure to wish to delete the Sync Service? (Yes / No)");
+                    let confirm_prompt = Confirm::new(
+                        "Are you sure you wish to delete the Sync Service? (Yes / No)",
+                    );
                     let confirmation = prompt_user(confirm_prompt);
                     if confirmation.is_some() && confirmation.unwrap() == true {
                         println!("Deleting Sync Service...");

@@ -71,8 +71,10 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                             }
                                             "Delete" => {
                                                 let confirm_prompt = Confirm::new(
-                                                "Are you sure to wish to delete the Conversation? (Yes / No)",
-                                            );
+                                                        "Are you sure you to wish to delete the Conversation?"
+                                                    )
+                                                        .with_placeholder("N")
+                                                        .with_default(false);
                                                 let confirmation = prompt_user(confirm_prompt);
                                                 if confirmation.is_some()
                                                     && confirmation.unwrap() == true
@@ -511,7 +513,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                 }
                 Action::DeleteAllConversations => {
                     let first_confirmation_prompt = Confirm::new(
-                        "Are you sure to wish to delete **all** Conversations? (Yes / No)",
+                        "Are you sure you wish to delete **all** Conversations? (Yes / No)",
                     );
                     let second_confirmation_prompt =
                         Confirm::new("Are you double sure? There is no going back. (Yes / No)");
@@ -582,8 +584,9 @@ async fn update_conversation(
 /// Prompts the user for confirmation before deleting the conversation with
 /// the SID provided. Will panic if the delete operation fails.
 async fn delete_conversation(twilio: &Client, sid: &str) {
-    let confirmation_prompt =
-        Confirm::new("Are you sure to wish to delete the Conversation? (Yes / No)");
+    let confirmation_prompt = Confirm::new("Are you sure you wish to delete the Conversation?")
+        .with_placeholder("N")
+        .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
         if confirmation == true {

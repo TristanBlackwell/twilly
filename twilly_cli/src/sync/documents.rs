@@ -64,7 +64,7 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                             }
                                             "Delete" => {
                                                 let confirm_prompt = Confirm::new(
-                                                "Are you sure to wish to delete the Document? (Yes / No)",
+                                                "Are you sure you wish to delete the Document? (Yes / No)",
                                             );
                                                 let confirmation = prompt_user(confirm_prompt);
                                                 if confirmation.is_some()
@@ -174,7 +174,7 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                             }
                                             "Delete" => {
                                                 let confirm_prompt = Confirm::new(
-                                                "Are you sure to wish to delete the Document? (Yes / No)",
+                                                "Are you sure you wish to delete the Document? (Yes / No)",
                                             );
                                                 let confirmation = prompt_user(confirm_prompt);
                                                 if confirmation.is_some()
@@ -190,7 +190,11 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                                         .unwrap_or_else(|error| {
                                                             panic!("{}", error)
                                                         });
-                                                    documents.remove(selected_document_index.expect("Could not fin document in existing documents list"));
+                                                    documents.remove(
+                                                            selected_document_index.expect(
+                                                                "Could not find document in existing documents list"
+                                                            )
+                                                        );
                                                     selected_document_index = None;
                                                     println!("Document deleted.");
                                                     println!();
