@@ -90,16 +90,16 @@ impl Status {
 /// Possible filters when listing Accounts via the Twilio API
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-struct ListOrUpdateParams {
-    friendly_name: Option<String>,
-    status: Option<Status>,
+pub struct ListOrUpdateParams {
+    pub friendly_name: Option<String>,
+    pub status: Option<Status>,
 }
 
 /// Possible options when creating an Account via the Twilio API
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-struct CreateParams {
-    friendly_name: Option<String>,
+pub struct CreateParams {
+    pub friendly_name: Option<String>,
 }
 
 impl<'a> Accounts<'a> {

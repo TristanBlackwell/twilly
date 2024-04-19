@@ -14,8 +14,8 @@ use serde_with::skip_serializing_none;
 #[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct MapItemPage {
-    items: Vec<SyncMapItem>,
-    meta: PageMeta,
+    pub items: Vec<SyncMapItem>,
+    pub meta: PageMeta,
 }
 
 /// A Sync Map Item resource.
@@ -36,13 +36,31 @@ pub struct SyncMapItem {
     pub revision: String,
 }
 
-/// Parameters for creating a Sync Map Item
+/// Parameters for creating a Sync Map Item. Data must be a value
+/// capable to converting to JSON in which all keys must be
+/// strings.
+pub struct CreateParams<'a, T>
+where
+    T: ?Sized + Serialize,
+{
+    pub key: String,
+    /// Any value that can be represented as JSON
+    pub data: &'a T,
+    /// How long the Map Item should exist before deletion (in seconds).
+    pub ttl: Option<u16>,
+    /// How long the *parent* Map resource should exist before deletion (in seconds).
+    pub collection_ttl: Option<u16>,
+}
+
+/// Parameters for creating a Sync Map Item with
+/// data converted to a JSON string
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct CreateParams {
+struct CreateParamsWithJson {
     key: String,
-    data: Value,
+    /// JSON string of data
+    data: String,
     /// How long the Map Item should exist before deletion (in seconds).
     ttl: Option<u16>,
     /// How long the *parent* Map resource should exist before deletion (in seconds).
@@ -75,13 +93,30 @@ pub struct ListParams {
 }
 
 /// Parameters for updating a Sync Map Item
+pub struct UpdateParams<'a, T>
+where
+    T: ?Sized + Serialize,
+{
+    pub if_match: Option<String>,
+    /// Any value that can be represented as JSON
+    pub data: &'a T,
+    /// How long the Map Item should exist before deletion (in seconds).
+    pub ttl: Option<u16>,
+    /// How long the *parent* Map resource should exist before deletion (in seconds). Can only be used
+    /// if the `data` or `ttl` is updated in the same request.
+    pub collection_ttl: Option<u16>,
+}
+
+/// Parameters for updating a Sync Map Item with
+/// data converted to a JSON string
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct UpdateParams {
+struct UpdateParamsWithJson {
     #[serde(rename(serialize = "If-Match"))]
     if_match: Option<String>,
-    data: Value,
+    /// Any value that can be represented as JSON
+    data: String,
     /// How long the Map Item should exist before deletion (in seconds).
     ttl: Option<u16>,
     /// How long the *parent* Map resource should exist before deletion (in seconds). Can only be used
@@ -99,10 +134,23 @@ impl<'a, 'b> MapItems<'a, 'b> {
     /// [Creates a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#create-a-mapitem-resource)
     ///
     /// Creates a Sync Map Item with the provided parameters.
-    pub async fn create(&self, params: CreateParams) -> Result<SyncMapItem, TwilioError> {
+    pub async fn create<T>(&self, params: CreateParams<'_, T>) -> Result<SyncMapItem, TwilioError>
+    where
+        T: ?Sized + Serialize,
+    {
+        // Create a new struct with the provided data parameter converted to a
+        // JSON string as required by Twilio.
+        let params = CreateParamsWithJson {
+            key: params.key,
+            data: serde_json::to_string(params.data)
+                .expect("Unable to convert provided data value to a JSON string"),
+            ttl: params.ttl,
+            collection_ttl: params.collection_ttl,
+        };
+
         let map_item = self
             .client
-            .send_request::<SyncMapItem, CreateParams>(
+            .send_request::<SyncMapItem, CreateParamsWithJson>(
                 Method::POST,
                 &format!(
                     "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items",
@@ -192,7 +240,20 @@ impl<'a, 'b> MapItem<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and updates the item with the key provided to `mapitem()` with the parameters.
-    pub async fn update(&self, params: UpdateParams) -> Result<SyncMapItem, TwilioError> {
+    pub async fn update<T>(&self, params: UpdateParams<'_, T>) -> Result<SyncMapItem, TwilioError>
+    where
+        T: ?Sized + Serialize,
+    {
+        // Create a new struct with the provided data parameter converted to a
+        // JSON string as required by Twilio.
+        let params = UpdateParamsWithJson {
+            if_match: params.if_match,
+            data: serde_json::to_string(params.data)
+                .expect("Unable to convert provided data value to a JSON string"),
+            ttl: params.ttl,
+            collection_ttl: params.collection_ttl,
+        };
+
         let mut headers = HeaderMap::new();
 
         if let Some(if_match) = params.if_match.clone() {
@@ -201,7 +262,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
 
         let map_item = self
             .client
-            .send_request::<SyncMapItem, UpdateParams>(
+            .send_request::<SyncMapItem, UpdateParamsWithJson>(
                 Method::POST,
                 &format!(
                     "https://sync.twilio.com/v1/Services/{}/Maps/{}/Items/{}",

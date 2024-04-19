@@ -135,10 +135,10 @@ impl Default for Links {
 /// Possible filters when listing Conversations via the Twilio API
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-struct ListParams {
-    start_date: Option<String>,
-    end_date: Option<String>,
-    state: Option<State>,
+pub struct ListParams {
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub state: Option<State>,
 }
 
 impl<'a> Conversations<'a> {

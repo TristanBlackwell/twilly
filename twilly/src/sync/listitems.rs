@@ -37,11 +37,24 @@ pub struct SyncListItem {
 }
 
 /// Parameters for creating a Sync List Item
+pub struct CreateParams<'a, T>
+where
+    T: ?Sized + Serialize,
+{
+    pub data: &'a T,
+    /// How long the List Item should exist before deletion (in seconds).
+    pub ttl: Option<u16>,
+    /// How long the *parent* List resource should exist before deletion (in seconds).
+    pub collection_ttl: Option<u16>,
+}
+
+/// Parameters for creating a Sync List with
+/// data converted to a JSON string
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct CreateParams {
-    data: Value,
+struct CreateParamsWithJson {
+    data: String,
     /// How long the List Item should exist before deletion (in seconds).
     ttl: Option<u16>,
     /// How long the *parent* List resource should exist before deletion (in seconds).
@@ -73,17 +86,32 @@ pub struct ListParams {
     pub bounds: Option<Bounds>,
 }
 
-/// Parameters for updating a Sync Map Item
+/// Parameters for updating a Sync Map List
+pub struct UpdateParams<'a, T>
+where
+    T: ?Sized + Serialize,
+{
+    pub if_match: Option<String>,
+    pub data: &'a T,
+    /// How long the List Item should exist before deletion (in seconds).
+    pub ttl: Option<u16>,
+    /// How long the *parent* List resource should exist before deletion (in seconds). Can only be used
+    /// if the `data` or `ttl` is updated in the same request.
+    pub collection_ttl: Option<u16>,
+}
+
+/// Parameters for creating a Sync List with
+/// data converted to a JSON string
 #[skip_serializing_none]
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
-pub struct UpdateParams {
+struct UpdateParamsWithJson {
     #[serde(rename(serialize = "If-Match"))]
     if_match: Option<String>,
-    data: Value,
-    /// How long the Map Item should exist before deletion (in seconds).
+    data: String,
+    /// How long the List Item should exist before deletion (in seconds).
     ttl: Option<u16>,
-    /// How long the *parent* Map resource should exist before deletion (in seconds). Can only be used
+    /// How long the *parent* List resource should exist before deletion (in seconds). Can only be used
     /// if the `data` or `ttl` is updated in the same request.
     collection_ttl: Option<u16>,
 }
@@ -98,10 +126,22 @@ impl<'a, 'b> ListItems<'a, 'b> {
     /// [Creates a Sync List Item](https://www.twilio.com/docs/sync/api/listitem-resource#create-a-listitem-resource)
     ///
     /// Creates a Sync List Item with the provided parameters.
-    pub async fn create(&self, params: CreateParams) -> Result<SyncListItem, TwilioError> {
+    pub async fn create<T>(&self, params: CreateParams<'_, T>) -> Result<SyncListItem, TwilioError>
+    where
+        T: ?Sized + Serialize,
+    {
+        // Create a new struct with the provided data parameter converted to a
+        // JSON string as required by Twilio.
+        let params = CreateParamsWithJson {
+            data: serde_json::to_string(params.data)
+                .expect("Unable to convert provided data value to a JSON string"),
+            ttl: params.ttl,
+            collection_ttl: params.collection_ttl,
+        };
+
         let list_item = self
             .client
-            .send_request::<SyncListItem, CreateParams>(
+            .send_request::<SyncListItem, CreateParamsWithJson>(
                 Method::POST,
                 &format!(
                     "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items",
@@ -191,7 +231,19 @@ impl<'a, 'b> ListItem<'a, 'b> {
     ///
     /// Targets the Sync Service provided to the `service()` argument, the List provided to the `list()`
     /// argument and updates the item with the index provided to `listitem()` with the parameters.
-    pub async fn update(&self, params: UpdateParams) -> Result<SyncListItem, TwilioError> {
+    pub async fn update<T>(&self, params: UpdateParams<'_, T>) -> Result<SyncListItem, TwilioError>
+    where
+        T: ?Sized + Serialize,
+    {
+        // Create a new struct with the provided data parameter converted to a
+        // JSON string as required by Twilio.
+        let params = UpdateParamsWithJson {
+            if_match: params.if_match,
+            data: serde_json::to_string(params.data)
+                .expect("Unable to convert provided data value to a JSON string"),
+            ttl: params.ttl,
+            collection_ttl: params.collection_ttl,
+        };
         let mut headers = HeaderMap::new();
 
         if let Some(if_match) = params.if_match.clone() {
@@ -200,7 +252,7 @@ impl<'a, 'b> ListItem<'a, 'b> {
 
         let list_item = self
             .client
-            .send_request::<SyncListItem, UpdateParams>(
+            .send_request::<SyncListItem, UpdateParamsWithJson>(
                 Method::POST,
                 &format!(
                     "https://sync.twilio.com/v1/Services/{}/Lists/{}/Items/{}",

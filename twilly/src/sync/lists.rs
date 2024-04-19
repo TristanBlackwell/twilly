@@ -58,8 +58,8 @@ impl Default for Links {
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
 pub struct CreateParams {
-    unique_name: Option<String>,
-    ttl: Option<bool>,
+    pub unique_name: Option<String>,
+    pub ttl: Option<bool>,
 }
 
 /// Parameters for updating a Sync List
@@ -67,7 +67,7 @@ pub struct CreateParams {
 #[derive(Serialize)]
 #[serde(rename_all(serialize = "PascalCase"))]
 pub struct UpdateParams {
-    ttl: Option<bool>,
+    pub ttl: Option<bool>,
 }
 
 pub struct Lists<'a, 'b> {

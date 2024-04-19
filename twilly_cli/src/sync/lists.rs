@@ -73,16 +73,18 @@ pub async fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
             match resource {
                 Action::ListItem => {
                     listitems::choose_list_item_action(&twilio, sync_service, &selected_sync_list)
-                        .await
+                        .await;
                 }
 
                 Action::ListDetails => {
                     println!("{:#?}", selected_sync_list);
-                    println!()
+                    println!();
                 }
                 Action::Delete => {
                     let confirm_prompt =
-                        Confirm::new("Are you sure you wish to delete the Sync List? (Yes / No)");
+                        Confirm::new("Are you sure you wish to delete the Sync List? (Yes / No)")
+                            .with_placeholder("N")
+                            .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
                     if confirmation.is_some() && confirmation.unwrap() == true {
                         println!("Deleting Sync List...");
@@ -102,7 +104,9 @@ pub async fn choose_list_action(twilio: &Client, sync_service: &SyncService) {
                         break;
                     }
                 }
-                Action::Back => break,
+                Action::Back => {
+                    break;
+                }
                 Action::Exit => process::exit(0),
             }
         }
