@@ -90,12 +90,12 @@ impl<'a> ParticipantConversations<'a> {
     ) -> Result<Vec<ParticipantConversation>, TwilioError> {
         let params = ListParams {
             identity: if let Some(identity) = identity {
-                Some(identity.to_string())
+                Some(identity)
             } else {
                 None
             },
             address: if let Some(address) = address {
-                Some(address.to_string())
+                Some(address)
             } else {
                 None
             },
