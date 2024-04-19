@@ -456,8 +456,12 @@ pub async fn choose_conversation_action(twilio: &Client) {
                     }
                 }
                 Action::ListByIdentifier => {
+                    let mut identity: Option<String> = None;
+                    let mut address: Option<String> = None;
+
                     let identifier_selection =
-                        Select::new("Select an identifier:", vec!["Identity", "Address"]);
+                        Select::new("Select an identifier:", vec!["Identity", "Address"])
+                            .with_help_message("Identity for chat-based users otherwise Address");
 
                     if let Some(identifier) = prompt_user_selection(identifier_selection) {
                         match identifier {
@@ -465,39 +469,65 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                 let identity_prompt =
                                     Text::new("Please provide the identity to search for:");
 
-                                if let Some(identity) = prompt_user(identity_prompt) {
-                                    let conversations = twilio
-                                        .conversations()
-                                        .participant_conversations()
-                                        .list(Some(identity), None)
-                                        .await
-                                        .unwrap_or_else(|error| panic!("{}", error));
-
-                                    conversations
-                                        .into_iter()
-                                        .for_each(|conv| println!("{:#?}", conv.conversation_sid))
-                                }
+                                identity = prompt_user(identity_prompt);
                             }
                             "Address" => {
                                 let address_prompt =
                                     Text::new("Please provide the address to search for:");
 
-                                if let Some(address) = prompt_user(address_prompt) {
-                                    let conversations = twilio
-                                        .conversations()
-                                        .participant_conversations()
-                                        .list(None, Some(address))
-                                        .await
-                                        .unwrap_or_else(|error| panic!("{}", error));
-
-                                    conversations
-                                        .into_iter()
-                                        .for_each(|conv| println!("{:#?}", conv.conversation_sid));
-                                }
+                                address = prompt_user(address_prompt);
                             }
                             _ => {
-                                println!("Unknown identifer '{}'", identifier)
+                                println!("Unknown identifier '{}'", identifier)
                             }
+                        }
+                    } else {
+                        break;
+                    }
+
+                    if let Some(filter_choice) = get_filter_choice_from_user(
+                        State::iter().map(|state| state.to_string()).collect(),
+                        "Filter by state? ",
+                    ) {
+                        let state = match filter_choice {
+                            FilterChoice::Any => None,
+                            FilterChoice::Other(choice) => Some(State::from_str(&choice).unwrap()),
+                        };
+
+                        println!("Fetching conversations...");
+                        let participant_conversations = twilio
+                            .conversations()
+                            .participant_conversations()
+                            .list(identity, address)
+                            .await
+                            .unwrap_or_else(|error| panic!("{}", error));
+
+                        // The Participant Conversations endpoint doesn't support state filtering so we need
+                        // to fetch all then filter here.
+                        let filtered_conversations = match state {
+                            None => participant_conversations,
+                            Some(state) => participant_conversations
+                                .into_iter()
+                                .filter(|participant_conv| {
+                                    participant_conv.conversation_state == state
+                                })
+                                .collect(),
+                        };
+
+                        let number_of_conversations = filtered_conversations.len();
+                        if filtered_conversations.len() == 0 {
+                            println!("No conversations found with the provided identifier.");
+                            println!();
+                        } else {
+                            println!("Found {} conversations.", number_of_conversations);
+                            println!();
+                            filtered_conversations.into_iter().for_each(|conv| {
+                                println!(
+                                    "{} - {}",
+                                    conv.conversation_sid, conv.conversation_date_created
+                                )
+                            });
+                            println!();
                         }
                     }
                 }
