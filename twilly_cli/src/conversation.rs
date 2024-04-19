@@ -552,11 +552,10 @@ pub async fn choose_conversation_action(twilio: &Client) {
                     }
                 }
                 Action::DeleteAllConversations => {
-                    let first_confirmation_prompt = Confirm::new(
-                        "Are you sure you wish to delete **all** Conversations? (Yes / No)",
-                    )
-                    .with_placeholder("N")
-                    .with_default(false);
+                    let first_confirmation_prompt =
+                        Confirm::new("Are you sure you wish to delete **all** Conversations? ")
+                            .with_placeholder("N")
+                            .with_default(false);
                     let second_confirmation_prompt =
                         Confirm::new("Are you double sure? There is no going back.")
                             .with_placeholder("N")
