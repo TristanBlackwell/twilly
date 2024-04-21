@@ -80,8 +80,7 @@ impl<'a, 'b> Maps<'a, 'b> {
     ///
     /// Creates a Sync Map resource with the provided parameters.
     pub async fn create(&self, params: CreateParams) -> Result<SyncMap, TwilioError> {
-        let map = self
-            .client
+        self.client
             .send_request::<SyncMap, CreateParams>(
                 Method::POST,
                 &format!(
@@ -91,9 +90,7 @@ impl<'a, 'b> Maps<'a, 'b> {
                 Some(&params),
                 None,
             )
-            .await;
-
-        map
+            .await
     }
 
     /// [Lists Sync Maps](https://www.twilio.com/docs/sync/api/map-resource#read-multiple-syncmap-resources)
@@ -148,8 +145,7 @@ impl<'a, 'b> Map<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument and fetches the Map
     /// provided to the `map()` argument.
     pub async fn get(&self) -> Result<SyncMap, TwilioError> {
-        let map = self
-            .client
+        self.client
             .send_request::<SyncMap, ()>(
                 Method::GET,
                 &format!(
@@ -159,9 +155,7 @@ impl<'a, 'b> Map<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        map
+            .await
     }
 
     /// [Update a Sync Map](https://www.twilio.com/docs/sync/api/map-resource#update-a-syncmap-resource)
@@ -169,8 +163,7 @@ impl<'a, 'b> Map<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument  and updates the Map
     /// provided to the `map()` argument.
     pub async fn update(&self, params: UpdateParams) -> Result<SyncMap, TwilioError> {
-        let map = self
-            .client
+        self.client
             .send_request::<SyncMap, UpdateParams>(
                 Method::POST,
                 &format!(
@@ -180,9 +173,7 @@ impl<'a, 'b> Map<'a, 'b> {
                 Some(&params),
                 None,
             )
-            .await;
-
-        map
+            .await
     }
 
     /// [Deletes a Sync Map](https://www.twilio.com/docs/sync/api/map-resource#delete-a-sync-map-resource)
@@ -192,8 +183,7 @@ impl<'a, 'b> Map<'a, 'b> {
     ///
     /// This will delete any Sync Map items underneath this map.
     pub async fn delete(&self) -> Result<(), TwilioError> {
-        let map = self
-            .client
+        self.client
             .send_request_and_ignore_response::<()>(
                 Method::DELETE,
                 &format!(
@@ -203,9 +193,7 @@ impl<'a, 'b> Map<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        map
+            .await
     }
 
     /// Functions relating to a known Sync Map Item.

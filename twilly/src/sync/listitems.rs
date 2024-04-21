@@ -139,8 +139,7 @@ impl<'a, 'b> ListItems<'a, 'b> {
             collection_ttl: params.collection_ttl,
         };
 
-        let list_item = self
-            .client
+        self.client
             .send_request::<SyncListItem, CreateParamsWithJson>(
                 Method::POST,
                 &format!(
@@ -150,9 +149,7 @@ impl<'a, 'b> ListItems<'a, 'b> {
                 Some(&params),
                 None,
             )
-            .await;
-
-        list_item
+            .await
     }
 
     /// [Lists Sync List Items](https://www.twilio.com/docs/sync/api/listitem-resource#read-multiple-listitem-resources)
@@ -211,8 +208,7 @@ impl<'a, 'b> ListItem<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument, the List provided to the `list()`
     /// argument and fetches the item with the index provided to `listitem()`.
     pub async fn get(&self) -> Result<SyncListItem, TwilioError> {
-        let list_item = self
-            .client
+        self.client
             .send_request::<SyncListItem, ()>(
                 Method::GET,
                 &format!(
@@ -222,9 +218,7 @@ impl<'a, 'b> ListItem<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        list_item
+            .await
     }
 
     /// [Update a Sync List Item](https://www.twilio.com/docs/sync/api/listitem-resource#update-a-listitem-resource)
@@ -250,8 +244,7 @@ impl<'a, 'b> ListItem<'a, 'b> {
             headers.append("If-Match", if_match.parse().unwrap());
         }
 
-        let list_item = self
-            .client
+        self.client
             .send_request::<SyncListItem, UpdateParamsWithJson>(
                 Method::POST,
                 &format!(
@@ -261,9 +254,7 @@ impl<'a, 'b> ListItem<'a, 'b> {
                 Some(&params),
                 Some(headers),
             )
-            .await;
-
-        list_item
+            .await
     }
 
     /// [Deletes a Sync List Item](https://www.twilio.com/docs/sync/api/listitem-resource#delete-a-listitem-resource)
@@ -271,8 +262,7 @@ impl<'a, 'b> ListItem<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument, the List provided to the `list()`
     /// argument and deletes the item with the index provided to `listitem()`.
     pub async fn delete(&self) -> Result<(), TwilioError> {
-        let list_item = self
-            .client
+        self.client
             .send_request_and_ignore_response::<()>(
                 Method::DELETE,
                 &format!(
@@ -282,8 +272,6 @@ impl<'a, 'b> ListItem<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        list_item
+            .await
     }
 }

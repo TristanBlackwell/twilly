@@ -80,8 +80,7 @@ impl<'a, 'b> Lists<'a, 'b> {
     ///
     /// Creates a Sync List resource with the provided parameters.
     pub async fn create(&self, params: CreateParams) -> Result<SyncList, TwilioError> {
-        let list = self
-            .client
+        self.client
             .send_request::<SyncList, CreateParams>(
                 Method::POST,
                 &format!(
@@ -91,9 +90,7 @@ impl<'a, 'b> Lists<'a, 'b> {
                 Some(&params),
                 None,
             )
-            .await;
-
-        list
+            .await
     }
 
     /// [Lists Sync Lists](https://www.twilio.com/docs/sync/api/list-resource#read-multiple-list-resources)
@@ -148,8 +145,7 @@ impl<'a, 'b> List<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument and fetches the List
     /// provided to the `list()` argument.
     pub async fn get(&self) -> Result<SyncList, TwilioError> {
-        let list = self
-            .client
+        self.client
             .send_request::<SyncList, ()>(
                 Method::GET,
                 &format!(
@@ -159,9 +155,7 @@ impl<'a, 'b> List<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        list
+            .await
     }
 
     /// [Update a Sync List](https://www.twilio.com/docs/sync/api/list-resource#update-a-list-resource)
@@ -169,8 +163,7 @@ impl<'a, 'b> List<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument  and updates the List
     /// provided to the `list()` argument.
     pub async fn update(&self, params: UpdateParams) -> Result<SyncList, TwilioError> {
-        let list = self
-            .client
+        self.client
             .send_request::<SyncList, UpdateParams>(
                 Method::POST,
                 &format!(
@@ -180,9 +173,7 @@ impl<'a, 'b> List<'a, 'b> {
                 Some(&params),
                 None,
             )
-            .await;
-
-        list
+            .await
     }
 
     /// [Deletes a Sync List](https://www.twilio.com/docs/sync/api/list-resource#delete-a-list-resource)
@@ -192,8 +183,7 @@ impl<'a, 'b> List<'a, 'b> {
     ///
     /// This will delete any Sync List items underneath this list.
     pub async fn delete(&self) -> Result<(), TwilioError> {
-        let list = self
-            .client
+        self.client
             .send_request_and_ignore_response::<()>(
                 Method::DELETE,
                 &format!(
@@ -203,9 +193,7 @@ impl<'a, 'b> List<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        list
+            .await
     }
 
     /// Functions relating to a known Sync List Item.

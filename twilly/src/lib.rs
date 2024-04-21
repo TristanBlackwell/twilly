@@ -297,17 +297,17 @@ impl Client {
     }
 
     /// Account related functions.
-    pub fn accounts<'a>(&'a self) -> Accounts {
+    pub fn accounts(&self) -> Accounts {
         Accounts { client: self }
     }
 
     /// Conversation related functions.
-    pub fn conversations<'a>(&'a self) -> Conversations {
+    pub fn conversations(&self) -> Conversations {
         Conversations { client: self }
     }
 
     /// Sync related functions.
-    pub fn sync<'a>(&'a self) -> Sync {
+    pub fn sync(&self) -> Sync {
         Sync { client: self }
     }
 }

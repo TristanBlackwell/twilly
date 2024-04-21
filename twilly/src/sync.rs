@@ -32,7 +32,7 @@ impl<'a> Sync<'a> {
     }
 
     /// General Sync Service functions.
-    pub fn services<'b>(&'a self) -> Services {
+    pub fn services(&'a self) -> Services {
         Services {
             client: self.client,
         }

@@ -80,9 +80,9 @@ impl Default for Status {
 impl Status {
     pub fn as_str(&self) -> &'static str {
         match self {
-            &Status::Active => "active",
-            &Status::Suspended => "suspended",
-            &Status::Closed => "closed",
+            Status::Active => "active",
+            Status::Suspended => "suspended",
+            Status::Closed => "closed",
         }
     }
 }
@@ -108,8 +108,7 @@ impl<'a> Accounts<'a> {
     /// Takes in an optional `sid` argument otherwise will default to the current config
     /// account SID.
     pub async fn get(&self, sid: Option<&str>) -> Result<Account, TwilioError> {
-        let account = self
-            .client
+        self.client
             .send_request::<Account, ()>(
                 Method::GET,
                 &format!(
@@ -119,9 +118,7 @@ impl<'a> Accounts<'a> {
                 None,
                 None,
             )
-            .await;
-
-        account
+            .await
     }
 
     /// [Lists Accounts](https://www.twilio.com/docs/iam/api/account#read-multiple-account-resources)
@@ -140,16 +137,8 @@ impl<'a> Accounts<'a> {
         status: Option<&Status>,
     ) -> Result<Vec<Account>, TwilioError> {
         let params = ListOrUpdateParams {
-            friendly_name: if let Some(friendly_name) = friendly_name {
-                Some(friendly_name.to_string())
-            } else {
-                None
-            },
-            status: if let Some(status) = status {
-                Some(status.clone())
-            } else {
-                None
-            },
+            friendly_name: friendly_name.map(|friendly_name| friendly_name.to_string()),
+            status: status.cloned(),
         };
 
         let mut accounts_page = self
@@ -191,11 +180,7 @@ impl<'a> Accounts<'a> {
     /// See documentation for detail.
     pub async fn create(&self, friendly_name: Option<&str>) -> Result<Account, TwilioError> {
         let params = CreateParams {
-            friendly_name: if let Some(friendly_name) = friendly_name {
-                Some(friendly_name.to_string())
-            } else {
-                None
-            },
+            friendly_name: friendly_name.map(|friendly_name| friendly_name.to_string()),
         };
 
         self.client
@@ -223,16 +208,8 @@ impl<'a> Accounts<'a> {
         status: Option<&Status>,
     ) -> Result<Account, TwilioError> {
         let opts = ListOrUpdateParams {
-            friendly_name: if let Some(friendly_name) = friendly_name {
-                Some(friendly_name.to_string())
-            } else {
-                None
-            },
-            status: if let Some(status) = status {
-                Some(status.clone())
-            } else {
-                None
-            },
+            friendly_name: friendly_name.map(|friendly_name| friendly_name.to_string()),
+            status: status.cloned(),
         };
 
         self.client

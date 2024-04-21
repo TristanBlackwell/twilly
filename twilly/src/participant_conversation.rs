@@ -88,18 +88,7 @@ impl<'a> ParticipantConversations<'a> {
         identity: Option<String>,
         address: Option<String>,
     ) -> Result<Vec<ParticipantConversation>, TwilioError> {
-        let params = ListParams {
-            identity: if let Some(identity) = identity {
-                Some(identity)
-            } else {
-                None
-            },
-            address: if let Some(address) = address {
-                Some(address)
-            } else {
-                None
-            },
-        };
+        let params = ListParams { identity, address };
 
         let mut participant_conversations_page = self
             .client

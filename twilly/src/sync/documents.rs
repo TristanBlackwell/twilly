@@ -120,8 +120,7 @@ impl<'a, 'b> Documents<'a, 'b> {
             ttl: params.ttl,
         };
 
-        let document = self
-            .client
+        self.client
             .send_request::<SyncDocument, CreateParamsWithJson>(
                 Method::POST,
                 &format!(
@@ -131,9 +130,7 @@ impl<'a, 'b> Documents<'a, 'b> {
                 Some(&params),
                 None,
             )
-            .await;
-
-        document
+            .await
     }
 
     /// [Lists Sync Documents](https://www.twilio.com/docs/sync/api/document-resource#read-multiple-document-resources)
