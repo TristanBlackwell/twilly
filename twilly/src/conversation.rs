@@ -1,6 +1,6 @@
 /*!
 
-Contains Twilio conversations related functionality.
+Contains Twilio conversation related functionality.
 
 */
 use std::fmt;
@@ -9,7 +9,7 @@ use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 
-use crate::{Client, PageMeta, TwilioError};
+use crate::{participant_conversation::ParticipantConversations, Client, PageMeta, TwilioError};
 
 /// Holds conversation related functions accessible
 /// on the client.
@@ -253,5 +253,12 @@ impl<'a> Conversations<'a> {
             .await;
 
         conversation
+    }
+
+    /// Participant Conversation related functions.
+    pub fn participant_conversations<'b>(&'b self) -> ParticipantConversations {
+        ParticipantConversations {
+            client: &self.client,
+        }
     }
 }

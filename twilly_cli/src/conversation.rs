@@ -19,6 +19,8 @@ pub enum Action {
     GetConversation,
     #[strum(to_string = "List Conversations")]
     ListConversations,
+    #[strum(to_string = "List Conversations by identifier")]
+    ListByIdentifier,
     #[strum(to_string = "Delete Conversation")]
     DeleteConversation,
     #[strum(to_string = "Delete all Conversations")]
@@ -71,7 +73,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                             }
                                             "Delete" => {
                                                 let confirm_prompt = Confirm::new(
-                                                        "Are you sure to wish to delete the Conversation?"
+                                                        "Are you sure you wish to delete the Conversation?"
                                                     )
                                                         .with_placeholder("N")
                                                         .with_default(false);
@@ -453,6 +455,82 @@ pub async fn choose_conversation_action(twilio: &Client) {
                         }
                     }
                 }
+                Action::ListByIdentifier => {
+                    let mut identity: Option<String> = None;
+                    let mut address: Option<String> = None;
+
+                    let identifier_selection =
+                        Select::new("Select an identifier:", vec!["Identity", "Address"])
+                            .with_help_message("Identity for chat-based users otherwise Address");
+
+                    if let Some(identifier) = prompt_user_selection(identifier_selection) {
+                        match identifier {
+                            "Identity" => {
+                                let identity_prompt =
+                                    Text::new("Please provide the identity to search for:");
+
+                                identity = prompt_user(identity_prompt);
+                            }
+                            "Address" => {
+                                let address_prompt =
+                                    Text::new("Please provide the address to search for:");
+
+                                address = prompt_user(address_prompt);
+                            }
+                            _ => {
+                                println!("Unknown identifier '{}'", identifier)
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+
+                    if let Some(filter_choice) = get_filter_choice_from_user(
+                        State::iter().map(|state| state.to_string()).collect(),
+                        "Filter by state? ",
+                    ) {
+                        let state = match filter_choice {
+                            FilterChoice::Any => None,
+                            FilterChoice::Other(choice) => Some(State::from_str(&choice).unwrap()),
+                        };
+
+                        println!("Fetching conversations...");
+                        let participant_conversations = twilio
+                            .conversations()
+                            .participant_conversations()
+                            .list(identity, address)
+                            .await
+                            .unwrap_or_else(|error| panic!("{}", error));
+
+                        // The Participant Conversations endpoint doesn't support state filtering so we need
+                        // to fetch all then filter here.
+                        let filtered_conversations = match state {
+                            None => participant_conversations,
+                            Some(state) => participant_conversations
+                                .into_iter()
+                                .filter(|participant_conv| {
+                                    participant_conv.conversation_state == state
+                                })
+                                .collect(),
+                        };
+
+                        let number_of_conversations = filtered_conversations.len();
+                        if filtered_conversations.len() == 0 {
+                            println!("No conversations found with the provided identifier.");
+                            println!();
+                        } else {
+                            println!("Found {} conversations.", number_of_conversations);
+                            println!();
+                            filtered_conversations.into_iter().for_each(|conv| {
+                                println!(
+                                    "{} - {}",
+                                    conv.conversation_sid, conv.conversation_date_created
+                                )
+                            });
+                            println!();
+                        }
+                    }
+                }
                 Action::DeleteConversation => {
                     let conversation_sid_prompt =
                         Text::new("Please provide a conversation SID, or unique name:")
@@ -475,7 +553,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                 }
                 Action::DeleteAllConversations => {
                     let first_confirmation_prompt =
-                        Confirm::new("Are you sure to wish to delete **all** Conversations?")
+                        Confirm::new("Are you sure you wish to delete **all** Conversations?")
                             .with_placeholder("N")
                             .with_default(false);
                     let second_confirmation_prompt =
@@ -551,7 +629,7 @@ async fn update_conversation(
 /// Prompts the user for confirmation before deleting the conversation with
 /// the SID provided. Will panic if the delete operation fails.
 async fn delete_conversation(twilio: &Client, sid: &str) {
-    let confirmation_prompt = Confirm::new("Are you sure to wish to delete the Conversation?")
+    let confirmation_prompt = Confirm::new("Are you sure you wish to delete the Conversation?")
         .with_placeholder("N")
         .with_default(false);
 
