@@ -81,7 +81,7 @@ pub async fn choose_list_item_action(twilio: &Client, sync_service: &SyncService
                 }
                 Action::Delete => {
                     let confirm_prompt =
-                        Confirm::new("Are you sure you wish to delete the Sync List item? ")
+                        Confirm::new("Are you sure you wish to delete the Sync List item?")
                             .with_placeholder("N")
                             .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);

@@ -82,7 +82,7 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                 }
                 Action::Delete => {
                     let confirm_prompt =
-                        Confirm::new("Are you sure you wish to delete the Sync Map? ")
+                        Confirm::new("Are you sure you wish to delete the Sync Map?")
                             .with_placeholder("N")
                             .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
