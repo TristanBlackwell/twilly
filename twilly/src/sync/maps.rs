@@ -38,19 +38,10 @@ pub struct SyncMap {
 }
 
 /// Resources _linked_ to a Sync Map
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub items: String,
     pub permissions: String,
-}
-
-impl Default for Links {
-    fn default() -> Self {
-        Links {
-            items: String::from(""),
-            permissions: String::from(""),
-        }
-    }
 }
 
 /// Parameters for creating a Sync Map

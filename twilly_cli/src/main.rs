@@ -14,32 +14,27 @@ async fn main() {
     print_welcome_message();
 
     let mut loaded_config = false;
-    let mut config =
-        confy::load::<TwilioConfig>("twilly", "profile").unwrap_or_else(|err| match err {
-            _ => {
-                eprintln!("Unable to load profile configuration: {}", err);
-                TwilioConfig {
-                    ..Default::default()
-                }
-            }
-        });
+    let mut config = confy::load::<TwilioConfig>("twilly", "profile").unwrap_or_else(|err| {
+        eprintln!("Unable to load profile configuration: {}", err);
+        TwilioConfig {
+            ..Default::default()
+        }
+    });
 
     if config.account_sid.is_empty() | config.auth_token.is_empty() {
         config = request_credentials();
+    } else if Confirm::new(&format!(
+        "Account ({}) found in memory. Use this profile?",
+        config.account_sid
+    ))
+    .with_default(true)
+    .with_placeholder("Y")
+    .prompt()
+    .unwrap()
+    {
+        loaded_config = true;
     } else {
-        if Confirm::new(&format!(
-            "Account ({}) found in memory. Use this profile?",
-            config.account_sid
-        ))
-        .with_default(true)
-        .with_placeholder("Y")
-        .prompt()
-        .unwrap()
-        {
-            loaded_config = true;
-        } else {
-            config = request_credentials();
-        }
+        config = request_credentials();
     }
 
     let twilio = twilly::Client::new(&config);
@@ -93,6 +88,7 @@ async fn main() {
     }
 }
 
+#[allow(clippy::println_empty_string)]
 fn print_welcome_message() {
     println!("");
     println!("");

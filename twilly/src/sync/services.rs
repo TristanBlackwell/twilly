@@ -49,23 +49,12 @@ pub struct SyncService {
 }
 
 /// Resources _linked_ to a Service
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub documents: String,
     pub lists: String,
     pub maps: String,
     pub streams: String,
-}
-
-impl Default for Links {
-    fn default() -> Self {
-        Links {
-            documents: String::from(""),
-            lists: String::from(""),
-            maps: String::from(""),
-            streams: String::from(""),
-        }
-    }
 }
 
 /// Parameters for creating or updating a Sync Service. See `SyncService` for

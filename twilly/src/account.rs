@@ -56,10 +56,20 @@ impl fmt::Display for Account {
 
 /// Possible Account statuses.
 #[derive(
-    AsRefStr, Clone, Display, Debug, EnumIter, EnumString, Serialize, Deserialize, PartialEq,
+    AsRefStr,
+    Clone,
+    Display,
+    Default,
+    Debug,
+    EnumIter,
+    EnumString,
+    Serialize,
+    Deserialize,
+    PartialEq,
 )]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
+    #[default]
     /// A live account.
     #[strum(to_string = "Active")]
     Active,
@@ -69,12 +79,6 @@ pub enum Status {
     /// A closed account. This is permanent and cannot be re-opened.
     #[strum(to_string = "Closed")]
     Closed,
-}
-
-impl Default for Status {
-    fn default() -> Self {
-        Status::Active
-    }
 }
 
 impl Status {

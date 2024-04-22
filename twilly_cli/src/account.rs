@@ -100,7 +100,7 @@ pub async fn choose_account_action(twilio: &Client) {
                             // Remove it from the list.
                             accounts.retain(|ac| ac.sid != twilio.config.account_sid);
 
-                            if accounts.len() == 0 {
+                            if accounts.is_empty() {
                                 println!("No accounts found.");
                                 break;
                             }
@@ -115,41 +115,39 @@ pub async fn choose_account_action(twilio: &Client) {
                                 // then use this account otherwise let the user choice.
                                 let selected_account = if let Some(index) = selected_account_index {
                                     &mut accounts[index]
-                                } else {
-                                    if let Some(action_choice) = get_action_choice_from_user(
-                                        accounts
-                                            .iter()
-                                            .map(|ac| {
-                                                format!(
-                                                    "({}) {} - {}",
-                                                    ac.sid, ac.friendly_name, ac.status
-                                                )
-                                            })
-                                            .collect::<Vec<String>>(),
-                                        "Accounts: ",
-                                    ) {
-                                        match action_choice {
-                                            ActionChoice::Back => {
-                                                break;
-                                            }
-                                            ActionChoice::Exit => process::exit(0),
-                                            ActionChoice::Other(choice) => {
-                                                let account_position = accounts
-                                                    .iter()
-                                                    .position(
-                                                        |account| account.sid == choice[1..35]
-                                                    )
-                                                    .expect(
-                                                        "Could not find account in existing account list"
-                                                    );
-
-                                                selected_account_index = Some(account_position);
-                                                &mut accounts[account_position]
-                                            }
+                                } else if let Some(action_choice) = get_action_choice_from_user(
+                                    accounts
+                                        .iter()
+                                        .map(|ac| {
+                                            format!(
+                                                "({}) {} - {}",
+                                                ac.sid, ac.friendly_name, ac.status
+                                            )
+                                        })
+                                        .collect::<Vec<String>>(),
+                                    "Accounts: ",
+                                ) {
+                                    match action_choice {
+                                        ActionChoice::Back => {
+                                            break;
                                         }
-                                    } else {
-                                        break;
+                                        ActionChoice::Exit => process::exit(0),
+                                        ActionChoice::Other(choice) => {
+                                            let account_position = accounts
+                                                .iter()
+                                                .position(
+                                                    |account| account.sid == choice[1..35]
+                                                )
+                                                .expect(
+                                                    "Could not find account in existing account list"
+                                                );
+
+                                            selected_account_index = Some(account_position);
+                                            &mut accounts[account_position]
+                                        }
                                     }
+                                } else {
+                                    break;
                                 };
 
                                 match selected_account.status.as_str() {
@@ -290,9 +288,10 @@ pub async fn choose_account_action(twilio: &Client) {
     }
 }
 
+#[allow(clippy::println_empty_string)]
 async fn change_account_name(twilio: &Client, account_sid: &str) {
     let friendly_name_prompt =
-        Text::new("Provide a name:").with_validator(|val: &str| match val.len() > 0 {
+        Text::new("Provide a name:").with_validator(|val: &str| match !val.is_empty() {
             true => Ok(Validation::Valid),
             false => Ok(Validation::Invalid("Enter at least one character".into())),
         });
@@ -310,13 +309,14 @@ async fn change_account_name(twilio: &Client, account_sid: &str) {
     }
 }
 
+#[allow(clippy::println_empty_string)]
 async fn activate_account(twilio: &Client, account_sid: &str) {
     let confirmation_prompt = Confirm::new("Are you sure you wish to activate this account?")
         .with_placeholder("N")
         .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
-        if confirmation == true {
+        if confirmation {
             println!("Activating account...");
             twilio
                 .accounts()
@@ -340,7 +340,7 @@ async fn suspend_account(twilio: &Client, account_sid: &str) {
         .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
-        if confirmation == true {
+        if confirmation {
             println!("Suspending account...");
             let res = twilio
                 .accounts()
@@ -365,7 +365,7 @@ async fn close_account(twilio: &Client, account_sid: &str) {
         .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
-        if confirmation == true {
+        if confirmation {
             println!("Closing account...");
             twilio
                 .accounts()

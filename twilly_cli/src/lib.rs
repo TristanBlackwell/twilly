@@ -204,9 +204,9 @@ pub fn get_action_choice_from_user(
 
     match action_choice_opt {
         Some(action_choice) => match action_choice.as_str() {
-            "Back" => return Some(ActionChoice::Back),
-            "Exit" => return Some(ActionChoice::Exit),
-            _ => return Some(ActionChoice::Other(action_choice)),
+            "Back" => Some(ActionChoice::Back),
+            "Exit" => Some(ActionChoice::Exit),
+            _ => Some(ActionChoice::Other(action_choice)),
         },
         None => None,
     }
