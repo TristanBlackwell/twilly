@@ -1,6 +1,6 @@
 use std::process;
 
-use inquire::{Confirm, Select, Text};
+use inquire::{validator::Validation, Confirm, Select, Text};
 use regex::Regex;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
@@ -92,20 +92,22 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                 Action::Rename => {
                     let get_name_prompt = Text::new(
                         "What would you like to rename this map to? Must be supported characters '^[a-zA-Z0-9-_]+$'"
-                    );
+                    ).with_validator(|val: &str| {
+                        let allowed_chars = Regex::new(r"^[a-zA-Z0-9-_]+$").unwrap();
+                        let trimmed_name = val.trim();
+                        if !allowed_chars.is_match(trimmed_name) {
+                            return Ok(Validation::Invalid("Name doesn't match required filter '^[a-zA-Z0-9-_]+$'".into()));
+                        }
+
+                        return Ok(Validation::Valid);
+                    });
                     let get_name_result = prompt_user(get_name_prompt);
 
                     if let None = get_name_result {
                         break;
                     }
 
-                    let allowed_chars = Regex::new(r"^[a-zA-Z0-9-_]+$").unwrap();
-                    let name = get_name_result.unwrap();
-                    let trimmed_name = name.trim();
-                    if !allowed_chars.is_match(trimmed_name) {
-                        println!("Name doesn't match required filter '^[a-zA-Z0-9-_]+$'");
-                        break;
-                    }
+                    let trimmed_name = get_name_result.unwrap();
 
                     println!("Name confirmed '{trimmed_name}'");
 
