@@ -121,8 +121,11 @@ This process is non-reversible. We will:
     5. Create a new map with your new name
     6. Copy all items from the temporary map into the new map
 
+💡 Please note the TTL will not be preserved for the Map or items.
+
 We will not delete the temporary map after the process has completed.
 You can remove this using the CLI after you've confirmed the rename was successful.
+
 Would you like to continue?";
                     let confirm_operation = Confirm::new(confirmation_message)
                         .with_placeholder("N")
@@ -130,8 +133,10 @@ Would you like to continue?";
 
                     let confirmation_result = prompt_user(confirm_operation);
 
-                    if let None = confirmation_result {
-                        break;
+                    match confirmation_result {
+                        None => return,
+                        Some(false) => return,
+                        _ => (),
                     }
 
                     println!("Starting map rename process");
@@ -206,9 +211,16 @@ Would you like to continue?";
                     .with_default(false);
                     let confirm_copy = prompt_user(confirm_copy_message);
 
-                    if let None = confirm_copy {
-                        println!("Canceling operation. Copy was not successful.");
-                        return;
+                    match confirm_copy {
+                        None => {
+                            println!("Canceling operation. Copy was not successful.");
+                            return;
+                        }
+                        Some(false) => {
+                            println!("Canceling operation. Copy was not successful.");
+                            return;
+                        }
+                        _ => (),
                     }
 
                     // delete original map
