@@ -96,11 +96,11 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                             return Ok(Validation::Invalid("Name doesn't match required filter '^[a-zA-Z0-9-_]+$'".into()));
                         }
 
-                        return Ok(Validation::Valid);
+                        Ok(Validation::Valid)
                     });
                     let get_name_result = prompt_user(get_name_prompt);
 
-                    if let None = get_name_result {
+                    if get_name_result.is_none() {
                         break;
                     }
 
@@ -146,10 +146,7 @@ Would you like to continue?";
                         .maps()
                         .create(CreateMapParams {
                             ttl: None,
-                            unique_name: Some(String::from(format!(
-                                "temp-{}",
-                                selected_sync_map.unique_name
-                            ))),
+                            unique_name: Some(format!("temp-{}", selected_sync_map.unique_name)),
                         })
                         .await;
 
@@ -222,7 +219,7 @@ Would you like to continue?";
 
                     // delete original map
                     println!("(4/6) Delete original map");
-                    let _ = twilio
+                    twilio
                         .sync()
                         .service(&sync_service.sid)
                         .map(&selected_sync_map.sid)
@@ -242,7 +239,7 @@ Would you like to continue?";
                         .maps()
                         .create(CreateMapParams {
                             ttl: None,
-                            unique_name: Some(String::from(trimmed_name)),
+                            unique_name: Some(trimmed_name),
                         })
                         .await;
 
