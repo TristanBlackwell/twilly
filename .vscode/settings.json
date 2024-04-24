@@ -1,3 +1,4 @@
 {
-  "cSpell.words": ["chrono", "confy"]
+  "cSpell.words": ["chrono", "confy"],
+  "editor.rulers": [120]
 }
