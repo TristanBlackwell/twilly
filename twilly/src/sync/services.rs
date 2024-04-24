@@ -49,23 +49,12 @@ pub struct SyncService {
 }
 
 /// Resources _linked_ to a Service
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub documents: String,
     pub lists: String,
     pub maps: String,
     pub streams: String,
-}
-
-impl Default for Links {
-    fn default() -> Self {
-        Links {
-            documents: String::from(""),
-            lists: String::from(""),
-            maps: String::from(""),
-            streams: String::from(""),
-        }
-    }
 }
 
 /// Parameters for creating or updating a Sync Service. See `SyncService` for
@@ -96,22 +85,17 @@ impl<'a> Services<'a> {
             let validation =
                 validate_reachability_debouncing_window(reachability_debouncing_window);
 
-            if validation.is_err() {
-                return Err(validation.unwrap_err());
-            }
+            validation?
         }
 
-        let service = self
-            .client
+        self.client
             .send_request::<SyncService, CreateOrUpdateParams>(
                 Method::POST,
                 "https://sync.twilio.com/v1/Services",
                 Some(&params),
                 None,
             )
-            .await;
-
-        service
+            .await
     }
 
     /// [Lists Sync Services](https://www.twilio.com/docs/sync/api/service#read-multiple-service-resources)
@@ -160,17 +144,14 @@ impl<'a, 'b> Service<'a, 'b> {
     ///
     /// Fetches the Sync Service provided to the `Service()`.
     pub async fn get(&self) -> Result<SyncService, TwilioError> {
-        let service = self
-            .client
+        self.client
             .send_request::<SyncService, ()>(
                 Method::GET,
                 &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
                 None,
                 None,
             )
-            .await;
-
-        service
+            .await
     }
 
     /// [Update a Sync Service](https://www.twilio.com/docs/sync/api/service#update-a-service-resource)
@@ -182,22 +163,17 @@ impl<'a, 'b> Service<'a, 'b> {
             let validation =
                 validate_reachability_debouncing_window(reachability_debouncing_window);
 
-            if validation.is_err() {
-                return Err(validation.unwrap_err());
-            }
+            validation?
         }
 
-        let service = self
-            .client
+        self.client
             .send_request::<SyncService, CreateOrUpdateParams>(
                 Method::POST,
                 &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
                 Some(&params),
                 None,
             )
-            .await;
-
-        service
+            .await
     }
 
     /// [Deletes a Sync Service](https://www.twilio.com/docs/sync/api/service#delete-a-service-resource)
@@ -205,17 +181,14 @@ impl<'a, 'b> Service<'a, 'b> {
     /// Targets the Sync Service provided to the `Service()` argument and deletes the resource.
     /// **Use with caution. All sub resources (documents, maps, ...) will also be removed.**
     pub async fn delete(&self) -> Result<(), TwilioError> {
-        let service = self
-            .client
+        self.client
             .send_request_and_ignore_response::<()>(
                 Method::DELETE,
                 &format!("https://sync.twilio.com/v1/Services/{}", self.sid),
                 None,
                 None,
             )
-            .await;
-
-        service
+            .await
     }
 
     /// Functions relating to a known Sync Document.

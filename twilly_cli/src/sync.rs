@@ -35,7 +35,7 @@ pub async fn choose_sync_resource(twilio: &Client) {
         .await
         .unwrap_or_else(|error| panic!("{}", error));
 
-    if sync_services.len() == 0 {
+    if sync_services.is_empty() {
         println!("No Sync Services found.");
         return;
     }
@@ -53,7 +53,7 @@ pub async fn choose_sync_resource(twilio: &Client) {
                     Some(unique_name) => format!("({}) {}", service.sid, unique_name),
                     None => match &service.friendly_name {
                         Some(friendly_name) => format!("({}) {}", service.sid, friendly_name),
-                        None => format!("{}", service.sid),
+                        None => service.sid.to_string(),
                     },
                 })
                 .collect::<Vec<String>>();
@@ -125,10 +125,10 @@ pub async fn choose_sync_resource(twilio: &Client) {
         if let Some(resource) = prompt_user_selection(resource_selection_prompt) {
             match resource {
                 Action::Document => {
-                    documents::choose_document_action(&twilio, selected_sync_service).await;
+                    documents::choose_document_action(twilio, selected_sync_service).await;
                 }
-                Action::Map => maps::choose_map_action(&twilio, selected_sync_service).await,
-                Action::List => lists::choose_list_action(&twilio, selected_sync_service).await,
+                Action::Map => maps::choose_map_action(twilio, selected_sync_service).await,
+                Action::List => lists::choose_list_action(twilio, selected_sync_service).await,
                 Action::ListDetails => {
                     println!("{:#?}", selected_sync_service);
                     println!();
@@ -139,7 +139,7 @@ pub async fn choose_sync_resource(twilio: &Client) {
                             .with_placeholder("N")
                             .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
-                    if confirmation.is_some() && confirmation.unwrap() == true {
+                    if confirmation.is_some() && confirmation.unwrap() {
                         println!("Deleting Sync Service...");
                         twilio
                             .sync()

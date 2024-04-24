@@ -16,6 +16,7 @@ pub enum Action {
     Exit,
 }
 
+#[allow(clippy::println_empty_string)]
 pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
     let options: Vec<Action> = Action::iter().collect();
 
@@ -71,9 +72,7 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                                 .with_placeholder("N")
                                                 .with_default(false);
                                                 let confirmation = prompt_user(confirm_prompt);
-                                                if confirmation.is_some()
-                                                    && confirmation.unwrap() == true
-                                                {
+                                                if confirmation.is_some() && confirmation.unwrap() {
                                                     println!("Deleting Document...");
                                                     twilio
                                                         .sync()
@@ -133,33 +132,31 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                         loop {
                             let selected_document = if let Some(index) = selected_document_index {
                                 &mut documents[index]
-                            } else {
-                                if let Some(action_choice) = get_action_choice_from_user(
-                                    documents
-                                        .iter()
-                                        .map(|doc| format!("({}) {}", doc.sid, doc.unique_name))
-                                        .collect::<Vec<String>>(),
-                                    "Documents: ",
-                                ) {
-                                    match action_choice {
-                                        ActionChoice::Back => {
-                                            break;
-                                        }
-                                        ActionChoice::Exit => process::exit(0),
-                                        ActionChoice::Other(choice) => {
-                                            let document_position = documents
-                                                .iter()
-                                                .position(|doc| doc.sid == choice[1..35])
-                                                .expect(
-                                                    "Could not find document in existing documents list"
-                                                );
-                                            selected_document_index = Some(document_position);
-                                            &mut documents[document_position]
-                                        }
+                            } else if let Some(action_choice) = get_action_choice_from_user(
+                                documents
+                                    .iter()
+                                    .map(|doc| format!("({}) {}", doc.sid, doc.unique_name))
+                                    .collect::<Vec<String>>(),
+                                "Documents: ",
+                            ) {
+                                match action_choice {
+                                    ActionChoice::Back => {
+                                        break;
                                     }
-                                } else {
-                                    break;
+                                    ActionChoice::Exit => process::exit(0),
+                                    ActionChoice::Other(choice) => {
+                                        let document_position = documents
+                                            .iter()
+                                            .position(|doc| doc.sid == choice[1..35])
+                                            .expect(
+                                                "Could not find document in existing documents list"
+                                            );
+                                        selected_document_index = Some(document_position);
+                                        &mut documents[document_position]
+                                    }
                                 }
+                            } else {
+                                break;
                             };
 
                             loop {
@@ -185,9 +182,7 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                                 .with_placeholder("N")
                                                 .with_default(false);
                                                 let confirmation = prompt_user(confirm_prompt);
-                                                if confirmation.is_some()
-                                                    && confirmation.unwrap() == true
-                                                {
+                                                if confirmation.is_some() && confirmation.unwrap() {
                                                     println!("Deleting Document...");
                                                     twilio
                                                         .sync()

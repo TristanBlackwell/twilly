@@ -32,7 +32,7 @@ pub async fn choose_list_item_action(twilio: &Client, sync_service: &SyncService
         .await
         .unwrap_or_else(|error| panic!("{}", error));
 
-    if sync_list_items.len() == 0 {
+    if sync_list_items.is_empty() {
         println!("No Sync List items found.");
         return;
     }
@@ -43,32 +43,30 @@ pub async fn choose_list_item_action(twilio: &Client, sync_service: &SyncService
     loop {
         let selected_sync_list_item = if let Some(index) = selected_sync_list_index {
             &mut sync_list_items[index]
-        } else {
-            if let Some(action_choice) = get_action_choice_from_user(
-                sync_list_items
-                    .iter()
-                    .map(|list_item| format!("{}", list_item.index))
-                    .collect::<Vec<String>>(),
-                "Choose a Sync List item: ",
-            ) {
-                match action_choice {
-                    ActionChoice::Back => {
-                        break;
-                    }
-                    ActionChoice::Exit => process::exit(0),
-                    ActionChoice::Other(choice) => {
-                        let sync_list_position = sync_list_items
-                            .iter()
-                            .position(|list| list.index.to_string() == choice)
-                            .expect("Could not find Sync List in existing Sync Map list");
-
-                        selected_sync_list_index = Some(sync_list_position);
-                        &mut sync_list_items[sync_list_position]
-                    }
+        } else if let Some(action_choice) = get_action_choice_from_user(
+            sync_list_items
+                .iter()
+                .map(|list_item| format!("{}", list_item.index))
+                .collect::<Vec<String>>(),
+            "Choose a Sync List item: ",
+        ) {
+            match action_choice {
+                ActionChoice::Back => {
+                    break;
                 }
-            } else {
-                break;
+                ActionChoice::Exit => process::exit(0),
+                ActionChoice::Other(choice) => {
+                    let sync_list_position = sync_list_items
+                        .iter()
+                        .position(|list| list.index.to_string() == choice)
+                        .expect("Could not find Sync List in existing Sync Map list");
+
+                    selected_sync_list_index = Some(sync_list_position);
+                    &mut sync_list_items[sync_list_position]
+                }
             }
+        } else {
+            break;
         };
 
         let options: Vec<Action> = Action::iter().collect();
@@ -85,7 +83,7 @@ pub async fn choose_list_item_action(twilio: &Client, sync_service: &SyncService
                             .with_placeholder("N")
                             .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
-                    if confirmation.is_some() && confirmation.unwrap() == true {
+                    if confirmation.is_some() && confirmation.unwrap() {
                         println!("Deleting Sync Map item...");
                         twilio
                             .sync()

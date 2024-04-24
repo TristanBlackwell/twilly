@@ -148,8 +148,7 @@ impl<'a, 'b> MapItems<'a, 'b> {
             collection_ttl: params.collection_ttl,
         };
 
-        let map_item = self
-            .client
+        self.client
             .send_request::<SyncMapItem, CreateParamsWithJson>(
                 Method::POST,
                 &format!(
@@ -159,9 +158,7 @@ impl<'a, 'b> MapItems<'a, 'b> {
                 Some(&params),
                 None,
             )
-            .await;
-
-        map_item
+            .await
     }
 
     /// [Lists Sync Map Items](https://www.twilio.com/docs/sync/api/map-item-resource#read-all-mapitem-resources)
@@ -220,8 +217,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and fetches the item with the key provided to `mapitem()`.
     pub async fn get(&self) -> Result<SyncMapItem, TwilioError> {
-        let map_item = self
-            .client
+        self.client
             .send_request::<SyncMapItem, ()>(
                 Method::GET,
                 &format!(
@@ -231,9 +227,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        map_item
+            .await
     }
 
     /// [Update a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#update-a-mapitem-resource)
@@ -260,8 +254,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
             headers.append("If-Match", if_match.parse().unwrap());
         }
 
-        let map_item = self
-            .client
+        self.client
             .send_request::<SyncMapItem, UpdateParamsWithJson>(
                 Method::POST,
                 &format!(
@@ -271,9 +264,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
                 Some(&params),
                 Some(headers),
             )
-            .await;
-
-        map_item
+            .await
     }
 
     /// [Deletes a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#delete-a-mapitem-resource)
@@ -281,8 +272,7 @@ impl<'a, 'b> MapItem<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`
     /// argument and deletes the item with the key provided to `mapitem()`.
     pub async fn delete(&self) -> Result<(), TwilioError> {
-        let map_item = self
-            .client
+        self.client
             .send_request_and_ignore_response::<()>(
                 Method::DELETE,
                 &format!(
@@ -292,8 +282,6 @@ impl<'a, 'b> MapItem<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        map_item
+            .await
     }
 }

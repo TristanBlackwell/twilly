@@ -38,17 +38,9 @@ pub struct SyncDocument {
 }
 
 /// Resources _linked_ to a document
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub permissions: String,
-}
-
-impl Default for Links {
-    fn default() -> Self {
-        Links {
-            permissions: String::from(""),
-        }
-    }
 }
 
 /// Parameters for creating a Sync Document
@@ -120,8 +112,7 @@ impl<'a, 'b> Documents<'a, 'b> {
             ttl: params.ttl,
         };
 
-        let document = self
-            .client
+        self.client
             .send_request::<SyncDocument, CreateParamsWithJson>(
                 Method::POST,
                 &format!(
@@ -131,9 +122,7 @@ impl<'a, 'b> Documents<'a, 'b> {
                 Some(&params),
                 None,
             )
-            .await;
-
-        document
+            .await
     }
 
     /// [Lists Sync Documents](https://www.twilio.com/docs/sync/api/document-resource#read-multiple-document-resources)
@@ -188,8 +177,7 @@ impl<'a, 'b> Document<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument and fetches the Document
     /// provided to the `document()` argument.
     pub async fn get(&self) -> Result<SyncDocument, TwilioError> {
-        let document = self
-            .client
+        self.client
             .send_request::<SyncDocument, ()>(
                 Method::GET,
                 &format!(
@@ -199,9 +187,7 @@ impl<'a, 'b> Document<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        document
+            .await
     }
 
     /// [Update a Sync Document](https://www.twilio.com/docs/sync/api/document-resource#update-a-document-resource)
@@ -227,8 +213,7 @@ impl<'a, 'b> Document<'a, 'b> {
             headers.append("If-Match", if_match.parse().unwrap());
         }
 
-        let document = self
-            .client
+        self.client
             .send_request::<SyncDocument, UpdateParamsWithJson>(
                 Method::POST,
                 &format!(
@@ -238,9 +223,7 @@ impl<'a, 'b> Document<'a, 'b> {
                 Some(&params),
                 Some(headers),
             )
-            .await;
-
-        document
+            .await
     }
 
     /// [Deletes a Sync Service](https://www.twilio.com/docs/sync/api/service#delete-a-service-resourcee)
@@ -248,8 +231,7 @@ impl<'a, 'b> Document<'a, 'b> {
     /// Targets the Sync Service provided to the `service()` argument and deletes the Document
     /// provided to the `document()` argument.
     pub async fn delete(&self) -> Result<(), TwilioError> {
-        let service = self
-            .client
+        self.client
             .send_request_and_ignore_response::<()>(
                 Method::DELETE,
                 &format!(
@@ -259,8 +241,6 @@ impl<'a, 'b> Document<'a, 'b> {
                 None,
                 None,
             )
-            .await;
-
-        service
+            .await
     }
 }

@@ -37,7 +37,7 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
         .await
         .unwrap_or_else(|error| panic!("{}", error));
 
-    if sync_maps.len() == 0 {
+    if sync_maps.is_empty() {
         println!("No Sync Maps found.");
         return;
     }
@@ -48,32 +48,30 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
     loop {
         let selected_sync_map = if let Some(index) = selected_sync_map_index {
             &mut sync_maps[index]
-        } else {
-            if let Some(action_choice) = get_action_choice_from_user(
-                sync_maps
-                    .iter()
-                    .map(|map| format!("({}) {}", map.sid, map.unique_name))
-                    .collect::<Vec<String>>(),
-                "Choose a Sync Map: ",
-            ) {
-                match action_choice {
-                    ActionChoice::Back => {
-                        break;
-                    }
-                    ActionChoice::Exit => process::exit(0),
-                    ActionChoice::Other(choice) => {
-                        let sync_map_position = sync_maps
-                            .iter()
-                            .position(|map| map.sid == choice[1..35])
-                            .expect("Could not find Sync Map in existing Sync Map list");
-
-                        selected_sync_map_index = Some(sync_map_position);
-                        &mut sync_maps[sync_map_position]
-                    }
+        } else if let Some(action_choice) = get_action_choice_from_user(
+            sync_maps
+                .iter()
+                .map(|map| format!("({}) {}", map.sid, map.unique_name))
+                .collect::<Vec<String>>(),
+            "Choose a Sync Map: ",
+        ) {
+            match action_choice {
+                ActionChoice::Back => {
+                    break;
                 }
-            } else {
-                break;
+                ActionChoice::Exit => process::exit(0),
+                ActionChoice::Other(choice) => {
+                    let sync_map_position = sync_maps
+                        .iter()
+                        .position(|map| map.sid == choice[1..35])
+                        .expect("Could not find Sync Map in existing Sync Map list");
+
+                    selected_sync_map_index = Some(sync_map_position);
+                    &mut sync_maps[sync_map_position]
+                }
             }
+        } else {
+            break;
         };
 
         let options: Vec<Action> = Action::iter().collect();
@@ -81,8 +79,7 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
         if let Some(resource) = prompt_user_selection(resource_selection_prompt) {
             match resource {
                 Action::MapItem => {
-                    mapitems::choose_map_item_action(&twilio, sync_service, &selected_sync_map)
-                        .await;
+                    mapitems::choose_map_item_action(twilio, sync_service, selected_sync_map).await;
                 }
 
                 Action::ListDetails => {
@@ -99,11 +96,11 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                             return Ok(Validation::Invalid("Name doesn't match required filter '^[a-zA-Z0-9-_]+$'".into()));
                         }
 
-                        return Ok(Validation::Valid);
+                        Ok(Validation::Valid)
                     });
                     let get_name_result = prompt_user(get_name_prompt);
 
-                    if let None = get_name_result {
+                    if get_name_result.is_none() {
                         break;
                     }
 
@@ -149,10 +146,7 @@ Would you like to continue?";
                         .maps()
                         .create(CreateMapParams {
                             ttl: None,
-                            unique_name: Some(String::from(format!(
-                                "temp-{}",
-                                selected_sync_map.unique_name
-                            ))),
+                            unique_name: Some(format!("temp-{}", selected_sync_map.unique_name)),
                         })
                         .await;
 
@@ -225,7 +219,7 @@ Would you like to continue?";
 
                     // delete original map
                     println!("(4/6) Delete original map");
-                    let _ = twilio
+                    twilio
                         .sync()
                         .service(&sync_service.sid)
                         .map(&selected_sync_map.sid)
@@ -245,7 +239,7 @@ Would you like to continue?";
                         .maps()
                         .create(CreateMapParams {
                             ttl: None,
-                            unique_name: Some(String::from(trimmed_name)),
+                            unique_name: Some(trimmed_name),
                         })
                         .await;
 
@@ -290,7 +284,7 @@ Would you like to continue?";
                             .with_placeholder("N")
                             .with_default(false);
                     let confirmation = prompt_user(confirm_prompt);
-                    if confirmation.is_some() && confirmation.unwrap() == true {
+                    if confirmation.is_some() && confirmation.unwrap() {
                         println!("Deleting Sync Map...");
                         twilio
                             .sync()

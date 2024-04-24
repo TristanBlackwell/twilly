@@ -29,6 +29,7 @@ pub enum Action {
     Exit,
 }
 
+#[allow(clippy::println_empty_string)]
 pub async fn choose_conversation_action(twilio: &Client) {
     let options: Vec<Action> = Action::iter().collect();
 
@@ -78,9 +79,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                                         .with_placeholder("N")
                                                         .with_default(false);
                                                 let confirmation = prompt_user(confirm_prompt);
-                                                if confirmation.is_some()
-                                                    && confirmation.unwrap() == true
-                                                {
+                                                if confirmation.is_some() && confirmation.unwrap() {
                                                     println!("Deleting Conversation...");
                                                     twilio
                                                         .conversations()
@@ -129,7 +128,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                             .with_default(false);
 
                     if let Some(decision) = prompt_user(filter_dates_prompt) {
-                        if decision == true {
+                        if decision {
                             user_filtered_dates = true;
                             let utc_now = chrono::Utc::now();
                             let utc_one_year_ago = utc_now - chrono::Duration::days(365);
@@ -174,9 +173,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
 
                     // Only continue if the user filtered by dates *and* provided both options.
                     // If they didn't then they must of cancelled the operation.
-                    if !user_filtered_dates
-                        || (user_filtered_dates && start_date.is_some() && end_date.is_some())
-                    {
+                    if !user_filtered_dates || (start_date.is_some() && end_date.is_some()) {
                         if let Some(filter_choice) = get_filter_choice_from_user(
                             State::iter().map(|state| state.to_string()).collect(),
                             "Filter by state? ",
@@ -213,46 +210,41 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                         selected_conversation_index
                                     {
                                         &mut conversations[index]
-                                    } else {
-                                        if let Some(action_choice) = get_action_choice_from_user(
-                                            conversations
-                                                .iter()
-                                                .map(|conv| {
-                                                    let display_name = match &conv.unique_name {
-                                                        Some(unique_name) => format!(
-                                                            "({}) {} - {}",
-                                                            conv.sid, unique_name, conv.state
-                                                        ),
-                                                        None => {
-                                                            format!("{} - {}", conv.sid, conv.state)
-                                                        }
-                                                    };
-                                                    display_name
-                                                })
-                                                .collect::<Vec<String>>(),
-                                            "Conversations: ",
-                                        ) {
-                                            match action_choice {
-                                                ActionChoice::Back => {
-                                                    break;
+                                    } else if let Some(action_choice) = get_action_choice_from_user(
+                                        conversations
+                                            .iter()
+                                            .map(|conv| match &conv.unique_name {
+                                                Some(unique_name) => format!(
+                                                    "({}) {} - {}",
+                                                    conv.sid, unique_name, conv.state
+                                                ),
+                                                None => {
+                                                    format!("{} - {}", conv.sid, conv.state)
                                                 }
-                                                ActionChoice::Exit => process::exit(0),
-                                                ActionChoice::Other(choice) => {
-                                                    let conversation_position = conversations
-                                                        .iter()
-                                                        .position(|conv| conv.sid == choice[..34])
-                                                        .expect(
-                                                            "Could not find conversation in existing conversation list"
-                                                        );
-
-                                                    selected_conversation_index =
-                                                        Some(conversation_position);
-                                                    &mut conversations[conversation_position]
-                                                }
+                                            })
+                                            .collect::<Vec<String>>(),
+                                        "Conversations: ",
+                                    ) {
+                                        match action_choice {
+                                            ActionChoice::Back => {
+                                                break;
                                             }
-                                        } else {
-                                            break;
+                                            ActionChoice::Exit => process::exit(0),
+                                            ActionChoice::Other(choice) => {
+                                                let conversation_position = conversations
+                                                    .iter()
+                                                    .position(|conv| conv.sid == choice[..34])
+                                                    .expect(
+                                                        "Could not find conversation in existing conversation list"
+                                                    );
+
+                                                selected_conversation_index =
+                                                    Some(conversation_position);
+                                                &mut conversations[conversation_position]
+                                            }
                                         }
+                                    } else {
+                                        break;
                                     };
 
                                     match selected_conversation.state {
@@ -515,7 +507,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                         };
 
                         let number_of_conversations = filtered_conversations.len();
-                        if filtered_conversations.len() == 0 {
+                        if filtered_conversations.is_empty() {
                             println!("No conversations found with the provided identifier.");
                             println!();
                         } else {
@@ -562,11 +554,11 @@ pub async fn choose_conversation_action(twilio: &Client) {
                             .with_default(false);
 
                     if let Some(first_confirmation) = prompt_user(first_confirmation_prompt) {
-                        if first_confirmation == true {
+                        if first_confirmation {
                             if let Some(second_confirmation) =
                                 prompt_user(second_confirmation_prompt)
                             {
-                                if second_confirmation == true {
+                                if second_confirmation {
                                     println!("Proceeding with deletion. Please wait...");
                                     let conversations = twilio
                                         .conversations()
@@ -620,7 +612,7 @@ async fn update_conversation(
             println!("Conversation updated.");
             println!();
 
-            return updated_conversation;
+            updated_conversation
         }
         Err(error) => panic!("{}", error),
     }
@@ -628,14 +620,15 @@ async fn update_conversation(
 
 /// Prompts the user for confirmation before deleting the conversation with
 /// the SID provided. Will panic if the delete operation fails.
+#[allow(clippy::println_empty_string)]
 async fn delete_conversation(twilio: &Client, sid: &str) {
     let confirmation_prompt = Confirm::new("Are you sure you wish to delete the Conversation?")
         .with_placeholder("N")
         .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
-        if confirmation == true {
-            match twilio.conversations().delete(&sid).await {
+        if confirmation {
+            match twilio.conversations().delete(sid).await {
                 Ok(_) => {
                     println!("Conversation deleted.");
                     println!("");

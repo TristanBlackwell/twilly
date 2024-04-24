@@ -62,10 +62,20 @@ pub struct UpdateConversation {
 
 /// The possible states of a conversation.
 #[derive(
-    AsRefStr, Clone, Display, Debug, EnumIter, EnumString, Serialize, Deserialize, PartialEq,
+    AsRefStr,
+    Clone,
+    Display,
+    Default,
+    Debug,
+    EnumIter,
+    EnumString,
+    Serialize,
+    Deserialize,
+    PartialEq,
 )]
 #[serde(rename_all = "lowercase")]
 pub enum State {
+    #[default]
     /// An active Conversation.
     #[strum(to_string = "Active")]
     Active,
@@ -77,24 +87,18 @@ pub enum State {
     Closed,
 }
 
-impl Default for State {
-    fn default() -> Self {
-        State::Active
-    }
-}
-
 impl State {
     pub fn as_str(&self) -> &'static str {
         match self {
-            &State::Active => "active",
-            &State::Inactive => "inactive",
-            &State::Closed => "closed",
+            State::Active => "active",
+            State::Inactive => "inactive",
+            State::Closed => "closed",
         }
     }
 }
 
 /// The timers configured for a Conversation's state.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Timers {
     /// The time at which the Conversation will become inactive.
     #[serde(rename(serialize = "Timers.Inactive"))]
@@ -104,32 +108,13 @@ pub struct Timers {
     pub date_closed: Option<String>,
 }
 
-impl Default for Timers {
-    fn default() -> Self {
-        Timers {
-            date_inactive: None,
-            date_closed: None,
-        }
-    }
-}
-
 /// Resources _linked_ to a conversation. These can be used to retrieve
 /// sub resources directly.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Links {
     pub participants: String,
     pub messages: String,
     pub webhooks: String,
-}
-
-impl Default for Links {
-    fn default() -> Self {
-        Links {
-            participants: String::from(""),
-            messages: String::from(""),
-            webhooks: String::from(""),
-        }
-    }
 }
 
 /// Possible filters when listing Conversations via the Twilio API
@@ -146,17 +131,14 @@ impl<'a> Conversations<'a> {
     ///
     /// Takes in a `sid` argument which can also be the Conversations `uniqueName`.
     pub async fn get(&self, sid: &str) -> Result<Conversation, TwilioError> {
-        let conversation = self
-            .client
+        self.client
             .send_request::<Conversation, ()>(
                 Method::GET,
                 &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
                 None,
                 None,
             )
-            .await;
-
-        conversation
+            .await
     }
 
     /// [Lists Conversations](https://www.twilio.com/docs/conversations/api/conversation-resource#read-multiple-conversation-resources)
@@ -174,16 +156,8 @@ impl<'a> Conversations<'a> {
         state: Option<State>,
     ) -> Result<Vec<Conversation>, TwilioError> {
         let params = ListParams {
-            start_date: if let Some(start_date) = start_date {
-                Some(start_date.to_string())
-            } else {
-                None
-            },
-            end_date: if let Some(end_date) = end_date {
-                Some(end_date.to_string())
-            } else {
-                None
-            },
+            start_date: start_date.map(|start_date| start_date.to_string()),
+            end_date: end_date.map(|end_date| end_date.to_string()),
             state,
         };
 
@@ -225,40 +199,34 @@ impl<'a> Conversations<'a> {
         sid: &str,
         updates: UpdateConversation,
     ) -> Result<Conversation, TwilioError> {
-        let conversation = self
-            .client
+        self.client
             .send_request::<Conversation, UpdateConversation>(
                 Method::POST,
                 &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
                 Some(&updates),
                 None,
             )
-            .await;
-
-        conversation
+            .await
     }
 
     /// [Deletes a Conversation](https://www.twilio.com/docs/conversations/api/conversation-resource#delete-a-conversation-resource)
     ///
     /// Takes in a `sid` argument which can also be the conversations `uniqueName` and **deletes** the resource.
     pub async fn delete(&self, sid: &str) -> Result<(), TwilioError> {
-        let conversation = self
-            .client
+        self.client
             .send_request_and_ignore_response::<()>(
                 Method::DELETE,
                 &format!("https://conversations.twilio.com/v1/Conversations/{}", sid),
                 None,
                 None,
             )
-            .await;
-
-        conversation
+            .await
     }
 
     /// Participant Conversation related functions.
-    pub fn participant_conversations<'b>(&'b self) -> ParticipantConversations {
+    pub fn participant_conversations(&self) -> ParticipantConversations {
         ParticipantConversations {
-            client: &self.client,
+            client: self.client,
         }
     }
 }
