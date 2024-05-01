@@ -21,6 +21,10 @@ pub enum Action {
     ListConversations,
     #[strum(to_string = "List Conversations by identifier")]
     ListByIdentifier,
+    #[strum(to_string = "Close Conversation")]
+    CloseConversation,
+    #[strum(to_string = "Close all Conversations")]
+    CloseAllConversations,
     #[strum(to_string = "Delete Conversation")]
     DeleteConversation,
     #[strum(to_string = "Delete all Conversations")]
@@ -523,6 +527,78 @@ pub async fn choose_conversation_action(twilio: &Client) {
                         }
                     }
                 }
+                Action::CloseConversation => {
+                    let conversation_sid_prompt =
+                        Text::new("Please provide a conversation SID, or unique name:")
+                            .with_placeholder("CH...")
+                            .with_validator(|val: &str| {
+                                if val.starts_with("CH") && val.len() == 34 {
+                                    Ok(Validation::Valid)
+                                } else {
+                                    Ok(Validation::Invalid(
+                                        "Conversation SID should be 34 characters in length".into(),
+                                    ))
+                                }
+                            });
+
+                    if let Some(conversation_sid) = prompt_user(conversation_sid_prompt) {
+                        close_conversation(twilio, &conversation_sid).await;
+                    } else {
+                        println!("Operation canceled. No changes were made.");
+                    }
+                }
+                Action::CloseAllConversations => {
+                    let confirmation_prompt =
+                        Confirm::new("Are you sure to wish to close **all** conversations?")
+                            .with_default(false)
+                            .with_placeholder("N");
+
+                    let confirmation_result = prompt_user(confirmation_prompt);
+
+                    if let None = confirmation_result {
+                        return;
+                    }
+
+                    if let Some(false) = confirmation_result {
+                        return;
+                    }
+
+                    let conversations = twilio
+                        .conversations()
+                        .list(None, None, Some(State::Active))
+                        .await
+                        .unwrap_or_else(|error| panic!("{}", error));
+
+                    println!(
+                        "We've found {} active conversations to close.",
+                        conversations.len()
+                    );
+                    let count_confirmation_prompt = Confirm::new("Continue?")
+                        .with_default(false)
+                        .with_placeholder("N");
+
+                    let count_confirmation_result = prompt_user(count_confirmation_prompt);
+
+                    if let None = count_confirmation_result {
+                        return;
+                    }
+
+                    if let Some(false) = count_confirmation_result {
+                        return;
+                    }
+
+                    println!("Proceeding with closing. Please wait...");
+                    for conversation in conversations {
+                        close_conversation(twilio, &conversation.sid).await;
+                        // This is not particularly smart but this prevents overwhelming Twilio.
+                        // Close 1 Conversation per second. The rate could be much higher than this.
+                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                    }
+
+                    println!("All active conversations closed.");
+                    println!("");
+                    return;
+                }
                 Action::DeleteConversation => {
                     let conversation_sid_prompt =
                         Text::new("Please provide a conversation SID, or unique name:")
@@ -618,6 +694,32 @@ async fn update_conversation(
     }
 }
 
+/// Helper function to encapsulate a conversation close update
+async fn close_conversation(twilio: &Client, sid: &str) {
+    match twilio
+        .conversations()
+        .update(
+            &sid,
+            UpdateConversation {
+                unique_name: None,
+                friendly_name: None,
+                state: Some(State::Closed),
+                attributes: None,
+                timers: None,
+            },
+        )
+        .await
+    {
+        Ok(_) => {
+            println!("Conversation closed.");
+            println!("");
+        }
+        Err(error) => {
+            panic!("{}", error);
+        }
+    }
+}
+
 /// Prompts the user for confirmation before deleting the conversation with
 /// the SID provided. Will panic if the delete operation fails.
 #[allow(clippy::println_empty_string)]
@@ -684,6 +786,6 @@ fn get_date_from_user(message: &str, date_range: Option<DateRange>) -> Option<ch
             prompt_user(date_selection_prompt)
         }
     };
-
+    
     selected_date
 }
