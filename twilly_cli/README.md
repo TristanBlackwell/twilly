@@ -7,3 +7,11 @@ It is decisioned essentially as an _improved_ [Twilio CLI](https://www.twilio.co
 ### Demo
 
 ![twilly_cli being used to load an active profile, view stored conversations, and delete a closed conversation on the account with a confirmation prompt](../assets/delete-conversation.gif)
+
+### Installation
+
+#### Releases
+
+Each cargo release of `twilly_cli` is built for Windows/Mac/Linux and accessible on the [GitHub Releases](https://github.com/TristanBlackwell/twilly/releases). Use the file name to identify the appropriate package for your OS.
+
+You can download this archive and unpack the executable to your location of choice. This can then be run.

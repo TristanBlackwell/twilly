@@ -11,12 +11,12 @@ use twilly_cli::{
 
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum Action {
-    #[strum(to_string = "Get account")]
-    GetAccount,
-    #[strum(to_string = "List accounts")]
-    ListAccounts,
-    #[strum(to_string = "Create account")]
-    CreateAccount,
+    #[strum(to_string = "Get sub-account")]
+    GetSubAccount,
+    #[strum(to_string = "List sub-accounts")]
+    ListSubAccounts,
+    #[strum(to_string = "Create sub-account")]
+    CreateSubAccount,
     Back,
     Exit,
 }
@@ -29,9 +29,12 @@ pub async fn choose_account_action(twilio: &Client) {
 
         if let Some(action) = prompt_user_selection(action_selection_prompt) {
             match action {
-                Action::GetAccount => {
+                Action::GetSubAccount => {
                     let account_sid_prompt = Text::new("Please provide an account SID:")
                         .with_placeholder("AC...")
+                        .with_help_message(
+                            "This will only find sub-accounts on your existing profile.",
+                        )
                         .with_validator(|val: &str| match val.starts_with("AC") {
                             true => Ok(Validation::Valid),
                             false => {
@@ -55,24 +58,24 @@ pub async fn choose_account_action(twilio: &Client) {
                         println!();
                     }
                 }
-                Action::CreateAccount => {
+                Action::CreateSubAccount => {
                     let friendly_name_prompt =
                         Text::new("Enter a friendly name (empty for default):");
 
                     if let Some(friendly_name) = prompt_user(friendly_name_prompt) {
-                        println!("Creating account...");
+                        println!("Creating sub-account...");
                         let account = twilio
                             .accounts()
                             .create(Some(&friendly_name))
                             .await
                             .unwrap_or_else(|error| panic!("{}", error));
                         println!(
-                            "Account created: {} ({})",
+                            "Sub-account created: {} ({})",
                             account.friendly_name, account.sid
                         );
                     }
                 }
-                Action::ListAccounts => {
+                Action::ListSubAccounts => {
                     let friendly_name_prompt =
                         Text::new("Search by friendly name? (empty for none):");
 
@@ -101,11 +104,11 @@ pub async fn choose_account_action(twilio: &Client) {
                             accounts.retain(|ac| ac.sid != twilio.config.account_sid);
 
                             if accounts.is_empty() {
-                                println!("No accounts found.");
+                                println!("No sub-accounts found.");
                                 break;
                             }
 
-                            println!("Found {} accounts.", accounts.len());
+                            println!("Found {} sub-accounts.", accounts.len());
 
                             // Stores the index of the account the user is currently interacting
                             // with. For the first loop this is certainly `None`.
@@ -139,7 +142,7 @@ pub async fn choose_account_action(twilio: &Client) {
                                                     |account| account.sid == choice[1..35]
                                                 )
                                                 .expect(
-                                                    "Could not find account in existing account list"
+                                                    "Could not find sub-account in existing sub-account list"
                                                 );
 
                                             selected_account_index = Some(account_position);
@@ -175,8 +178,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             .await;
                                                             accounts[selected_account_index
                                                                 .expect(
-                                                                    "Selected account is unknown",
-                                                                )]
+                                                                "Selected sub-account is unknown",
+                                                            )]
                                                             .friendly_name = friendly_name.clone();
                                                         }
                                                         "Suspend" => {
@@ -187,8 +190,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             .await;
                                                             accounts[selected_account_index
                                                                 .expect(
-                                                                    "Selected account is unknown",
-                                                                )]
+                                                                "Selected sub-account is unknown",
+                                                            )]
                                                             .status = Status::Suspended;
                                                         }
                                                         "Close" => {
@@ -199,8 +202,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             .await;
                                                             accounts[selected_account_index
                                                                 .expect(
-                                                                    "Selected account is unknown",
-                                                                )]
+                                                                "Selected sub-account is unknown",
+                                                            )]
                                                             .status = Status::Closed;
                                                         }
                                                         _ => {
@@ -245,8 +248,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                             .await;
                                                             accounts[selected_account_index
                                                                 .expect(
-                                                                    "Selected account is unknown",
-                                                                )]
+                                                                "Selected sub-account is unknown",
+                                                            )]
                                                             .status = Status::Active;
                                                         }
 
@@ -262,7 +265,7 @@ pub async fn choose_account_action(twilio: &Client) {
                                     }
                                     "closed" => {
                                         println!(
-                                            "{} is a closed account and can no longer be used.",
+                                            "{} is a closed sub-account and can no longer be used.",
                                             selected_account.sid
                                         );
                                     }
@@ -311,20 +314,20 @@ async fn change_account_name(twilio: &Client, account_sid: &str) {
 
 #[allow(clippy::println_empty_string)]
 async fn activate_account(twilio: &Client, account_sid: &str) {
-    let confirmation_prompt = Confirm::new("Are you sure you wish to activate this account?")
+    let confirmation_prompt = Confirm::new("Are you sure you wish to activate this sub-account?")
         .with_placeholder("N")
         .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
         if confirmation {
-            println!("Activating account...");
+            println!("Activating sub-account...");
             twilio
                 .accounts()
                 .update(account_sid, None, Some(&Status::Suspended))
                 .await
                 .unwrap_or_else(|error| panic!("{}", error));
 
-            println!("Account activated.");
+            println!("Aaccount activated.");
             return;
         }
     }
@@ -334,14 +337,14 @@ async fn activate_account(twilio: &Client, account_sid: &str) {
 
 async fn suspend_account(twilio: &Client, account_sid: &str) {
     let confirmation_prompt = Confirm::new(
-        "Are you sure you wish to suspend this account? Any activity will be disabled until the account is re-activated."
+        "Are you sure you wish to suspend this sub-account? Any activity will be disabled until the account is re-activated."
     )
         .with_placeholder("N")
         .with_default(false);
 
     if let Some(confirmation) = prompt_user(confirmation_prompt) {
         if confirmation {
-            println!("Suspending account...");
+            println!("Suspending sub-account...");
             let res = twilio
                 .accounts()
                 .update(account_sid, None, Some(&Status::Suspended))
@@ -359,7 +362,7 @@ async fn suspend_account(twilio: &Client, account_sid: &str) {
 
 async fn close_account(twilio: &Client, account_sid: &str) {
     let confirmation_prompt = Confirm::new(
-        "Are you sure you wish to Close this account? Activity will be disabled and this action cannot be reversed."
+        "Are you sure you wish to Close this sub-account? Activity will be disabled and this action cannot be reversed."
     )
         .with_placeholder("N")
         .with_default(false);
