@@ -555,7 +555,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
 
                     let confirmation_result = prompt_user(confirmation_prompt);
 
-                    if let None = confirmation_result {
+                    if confirmation_result.is_none() {
                         return;
                     }
 
@@ -579,7 +579,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
 
                     let count_confirmation_result = prompt_user(count_confirmation_prompt);
 
-                    if let None = count_confirmation_result {
+                    if count_confirmation_result.is_none() {
                         return;
                     }
 
@@ -699,7 +699,7 @@ async fn close_conversation(twilio: &Client, sid: &str) {
     match twilio
         .conversations()
         .update(
-            &sid,
+            sid,
             UpdateConversation {
                 unique_name: None,
                 friendly_name: None,
@@ -712,7 +712,7 @@ async fn close_conversation(twilio: &Client, sid: &str) {
     {
         Ok(_) => {
             println!("Conversation closed.");
-            println!("");
+            println!();
         }
         Err(error) => {
             panic!("{}", error);
@@ -786,6 +786,6 @@ fn get_date_from_user(message: &str, date_range: Option<DateRange>) -> Option<ch
             prompt_user(date_selection_prompt)
         }
     };
-    
+
     selected_date
 }

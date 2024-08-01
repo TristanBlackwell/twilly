@@ -177,7 +177,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                                 .expect(
                                                                     "Selected account is unknown",
                                                                 )]
-                                                            .friendly_name = friendly_name.clone();
+                                                            .friendly_name
+                                                            .clone_from(&friendly_name);
                                                         }
                                                         "Suspend" => {
                                                             suspend_account(
@@ -235,7 +236,8 @@ pub async fn choose_account_action(twilio: &Client) {
                                                                 .expect(
                                                                     "Selected account is unknown",
                                                                 )]
-                                                            .friendly_name = friendly_name.clone();
+                                                            .friendly_name
+                                                            .clone_from(&friendly_name);
                                                         }
                                                         "Activate" => {
                                                             activate_account(
