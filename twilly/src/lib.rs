@@ -36,6 +36,7 @@ twilio.conversations().delete(&conversation_sid);
 pub mod account;
 pub mod conversation;
 pub mod participant_conversation;
+pub mod serverless;
 pub mod sync;
 
 use std::fmt::{self};
