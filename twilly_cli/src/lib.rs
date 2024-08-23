@@ -18,7 +18,9 @@ the functionality of the crate.
 */
 use std::{fmt::Display, process};
 
+use chrono::Datelike;
 use chrono::NaiveDate;
+use inquire::MultiSelect;
 use inquire::{
     validator::Validation, Confirm, DateSelect, InquireError, Password, PasswordDisplayMode,
     Select, Text,
@@ -144,6 +146,13 @@ pub fn prompt_user_selection<T: Display>(control: Select<'_, T>) -> Option<T> {
     }
 }
 
+pub fn prompt_user_multi_selection<T: Display>(control: MultiSelect<'_, T>) -> Option<Vec<T>> {
+    match control.prompt() {
+        Ok(result) => Some(result),
+        Err(error) => handle_inquire_error(error),
+    }
+}
+
 /// The options available to filter search results.
 pub enum FilterChoice {
     /// Any option, not limited to anything.
@@ -210,4 +219,46 @@ pub fn get_action_choice_from_user(
         },
         None => None,
     }
+}
+
+pub struct DateRange {
+    pub minimum_date: chrono::NaiveDate,
+    pub maximum_date: chrono::NaiveDate,
+}
+
+pub fn get_date_from_user(
+    message: &str,
+    date_range: Option<DateRange>,
+) -> Option<chrono::NaiveDate> {
+    let selected_date = match date_range {
+        Some(date_range) => {
+            let date_selection_prompt = DateSelect::new(message)
+                .with_min_date(
+                    chrono::NaiveDate::from_ymd_opt(
+                        date_range.minimum_date.year(),
+                        date_range.minimum_date.month(),
+                        date_range.minimum_date.day(),
+                    )
+                    .unwrap(),
+                )
+                .with_max_date(
+                    chrono::NaiveDate::from_ymd_opt(
+                        date_range.maximum_date.year(),
+                        date_range.maximum_date.month(),
+                        date_range.maximum_date.day(),
+                    )
+                    .unwrap(),
+                )
+                .with_week_start(chrono::Weekday::Mon);
+
+            prompt_user(date_selection_prompt)
+        }
+        None => {
+            let date_selection_prompt =
+                DateSelect::new(message).with_week_start(chrono::Weekday::Mon);
+            prompt_user(date_selection_prompt)
+        }
+    };
+
+    selected_date
 }

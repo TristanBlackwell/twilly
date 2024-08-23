@@ -1,7 +1,7 @@
+use chrono::Datelike;
 use std::{process, str::FromStr};
 
-use chrono::Datelike;
-use inquire::{validator::Validation, Confirm, DateSelect, Select, Text};
+use inquire::{validator::Validation, Confirm, Select, Text};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use twilly::{
@@ -9,8 +9,8 @@ use twilly::{
     Client, ErrorKind,
 };
 use twilly_cli::{
-    get_action_choice_from_user, get_filter_choice_from_user, prompt_user, prompt_user_selection,
-    ActionChoice, FilterChoice,
+    get_action_choice_from_user, get_date_from_user, get_filter_choice_from_user, prompt_user,
+    prompt_user_selection, ActionChoice, DateRange, FilterChoice,
 };
 
 #[derive(Clone, Display, EnumIter, EnumString)]
@@ -749,43 +749,4 @@ async fn delete_conversation(twilio: &Client, sid: &str) {
             }
         }
     }
-}
-
-struct DateRange {
-    minimum_date: chrono::NaiveDate,
-    maximum_date: chrono::NaiveDate,
-}
-
-fn get_date_from_user(message: &str, date_range: Option<DateRange>) -> Option<chrono::NaiveDate> {
-    let selected_date = match date_range {
-        Some(date_range) => {
-            let date_selection_prompt = DateSelect::new(message)
-                .with_min_date(
-                    chrono::NaiveDate::from_ymd_opt(
-                        date_range.minimum_date.year(),
-                        date_range.minimum_date.month(),
-                        date_range.minimum_date.day(),
-                    )
-                    .unwrap(),
-                )
-                .with_max_date(
-                    chrono::NaiveDate::from_ymd_opt(
-                        date_range.maximum_date.year(),
-                        date_range.maximum_date.month(),
-                        date_range.maximum_date.day(),
-                    )
-                    .unwrap(),
-                )
-                .with_week_start(chrono::Weekday::Mon);
-
-            prompt_user(date_selection_prompt)
-        }
-        None => {
-            let date_selection_prompt =
-                DateSelect::new(message).with_week_start(chrono::Weekday::Mon);
-            prompt_user(date_selection_prompt)
-        }
-    };
-
-    selected_date
 }
