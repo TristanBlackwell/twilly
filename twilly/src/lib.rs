@@ -45,6 +45,7 @@ use account::Accounts;
 use conversation::Conversations;
 use reqwest::{header::HeaderMap, Method, Response};
 use serde::{Deserialize, Serialize};
+use serverless::Serverless;
 use strum_macros::{Display, EnumIter, EnumString};
 use sync::Sync;
 
@@ -172,6 +173,7 @@ pub enum SubResource {
     Account,
     Conversations,
     Sync,
+    Serverless,
 }
 
 impl Client {
@@ -310,6 +312,10 @@ impl Client {
     /// Sync related functions.
     pub fn sync(&self) -> Sync {
         Sync { client: self }
+    }
+
+    pub fn serverless(&self) -> Serverless {
+        Serverless { client: self }
     }
 }
 

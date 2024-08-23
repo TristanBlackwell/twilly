@@ -34,7 +34,6 @@ pub struct ServerlessLog {
     pub url: String,
 }
 
-#[serde(rename_all = "lowercase")]
 #[derive(
     AsRefStr,
     Clone,
@@ -47,6 +46,7 @@ pub struct ServerlessLog {
     Deserialize,
     PartialEq,
 )]
+#[serde(rename_all = "UPPERCASE")]
 pub enum Level {
     #[default]
     #[strum(to_string = "Info")]

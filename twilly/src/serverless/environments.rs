@@ -7,6 +7,7 @@ Contains Twilio Serverless Environment related functionality.
 pub mod logs;
 
 use crate::{Client, PageMeta, TwilioError};
+use logs::{Log, Logs};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -28,7 +29,7 @@ pub struct ServerlessEnvironment {
     pub build_sid: String,
     pub unique_name: String,
     /// URL-friendly name which forms part of the domain (unless production).
-    pub domain_suffix: String,
+    pub domain_suffix: Option<String>,
     /// Domain for all functions & assets deployed in the Environment.
     pub domain_name: String,
     pub url: String,
@@ -164,5 +165,26 @@ impl<'a, 'b> Environment<'a, 'b> {
                 None,
             )
             .await
+    }
+
+    /// Functions relating to a known Environment Log.
+    ///
+    /// Takes in the key of the Sync List Item to perform actions against.
+    pub fn log(&'a self, sid: &'b str) -> Log {
+        Log {
+            client: self.client,
+            service_sid: self.service_sid,
+            environment_sid: self.sid,
+            sid,
+        }
+    }
+
+    /// General Sync Map Item functions.
+    pub fn logs(&'a self) -> Logs {
+        Logs {
+            client: self.client,
+            service_sid: self.service_sid,
+            environment_sid: self.sid,
+        }
     }
 }
