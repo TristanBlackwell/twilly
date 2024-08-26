@@ -1,6 +1,6 @@
 [package]
 name = "twilly"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 description = "A implementation of the Twilio API in Rust built upon Reqwest and Serde"
 authors = ["Tristan Blackwell"]

@@ -1,6 +1,6 @@
 [package]
 name = "twilly_cli"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 description = "A CLI tool for interacting the Twilio API built upon the twilly crate"
 authors = ["Tristan Blackwell"]
@@ -15,7 +15,7 @@ rust-version = "1.74.1"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-twilly = { path = "../twilly", version = "0.1.1" }
+twilly = { path = "../twilly", version = "0.2.0" }
 inquire = { version = "0.6.2", features = ["date"] }
 chrono = "0.4.31"
 strum = "0.26.1"

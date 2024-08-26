@@ -47,16 +47,16 @@ cargo r
 
 ```sh
 # Download the packaged binary
-wget -q https://github.com/TristanBlackwell/twilly/releases/download/v0.1.1/twilly_cli-v0.1.1-x86_64-unknown-linux-musl.tar.gz
+wget -q https://github.com/TristanBlackwell/twilly/releases/download/v0.1.1/twilly_cli-v0.2.0-x86_64-unknown-linux-musl.tar.gz
 
 # Unpack
-tar xf twilly_cli-v0.1.1-x86_64-unknown-linux-musl.tar.gz
+tar xf twilly_cli-v0.2.0-x86_64-unknown-linux-musl.tar.gz
 
 # Move twilly_cli to system path
-mv twilly_cli-v0.1.1-x86_64-unknown-linux-musl/twilly_cli /usr/local/bin
+mv twilly_cli-v0.2.0-x86_64-unknown-linux-musl/twilly_cli /usr/local/bin
 
 # Cleanup
-rm -r twilly_cli-v0.1.1-x86_64-unknown-linux-musl twilly_cli-v0.1.1-x86_64-unknown-linux-musl.tar.gz
+rm -r twilly_cli-v0.2.0-x86_64-unknown-linux-musl twilly_cli-v0.2.0-x86_64-unknown-linux-musl.tar.gz
 
 # Run it
 twilly_cli
@@ -66,13 +66,13 @@ twilly_cli
 
 ```sh
 # Download the binary
-wget -q https://github.com/TristanBlackwell/twilly/releases/download/v0.1.1/twilly_cli-v0.1.1-x86_64-apple-darwin.tar.gz
+wget -q https://github.com/TristanBlackwell/twilly/releases/download/v0.2.0/twilly_cli-v0.2.0-x86_64-apple-darwin.tar.gz
 
-tar xf twilly_cli-v0.1.1-x86_64-apple-darwin.tar.gz
+tar xf twilly_cli-v0.2.0-x86_64-apple-darwin.tar.gz
 
-mv twilly_cli-v0.1.1-x86_64-apple-darwin/twilly_cli /usr/local/bin
+mv twilly_cli-v0.2.0-x86_64-apple-darwin/twilly_cli /usr/local/bin
 
-rm -r twilly_cli-v0.1.1-x86_64-apple-darwin twilly_cli-v0.1.1-x86_64-apple-darwin.tar.gz
+rm -r twilly_cli-v0.2.0-x86_64-apple-darwin twilly_cli-v0.2.0-x86_64-apple-darwin.tar.gz
 
 twilly_cli
 ```
