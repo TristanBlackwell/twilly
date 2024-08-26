@@ -85,28 +85,16 @@ impl<'a, 'b> Logs<'a, 'b> {
     pub async fn list(
         &self,
         function_sid: Option<String>,
-        start_date: Option<chrono::NaiveDate>,
-        end_date: Option<chrono::NaiveDate>,
+        start_date: Option<chrono::DateTime<chrono::Utc>>,
+        end_date: Option<chrono::DateTime<chrono::Utc>>,
     ) -> Result<Vec<ServerlessLog>, TwilioError> {
-        let start_date_param =
-            start_date.map(|start_date| start_date.format("%Y-%m-%dT00:00:00Z").to_string());
-
-        // If our end date is today we can only retrieve up until the current time otherwise we can
-        // set the time manually to fetch the full day.
-        let end_date_param = end_date.map(|end_date| {
-            let now = Utc::now();
-            if end_date == now.date_naive() {
-                now.format("%Y-%m-%dT%H:%M:%SZ").to_string()
-            } else {
-                end_date.format("%Y-%m-%dT23:59:59Z").to_string()
-            }
-        });
-
         let params = ListParams {
             function_sid,
-            start_date: start_date_param,
-            end_date: end_date_param,
+            start_date: start_date.map(|sd| sd.format("%Y-%m-%dT%H:%M:%SZ").to_string()),
+            end_date: end_date.map(|ed| ed.format("%Y-%m-%dT%H:%M:%SZ").to_string()),
         };
+        dbg!(&params.start_date);
+        dbg!(&params.end_date);
 
         let mut logs_page = self
             .client

@@ -1,4 +1,4 @@
-use chrono::Datelike;
+use chrono::{Datelike, Duration, TimeZone, Utc};
 use std::process;
 
 use inquire::{validator::Validation, Confirm, MultiSelect, Select, Text};
@@ -16,6 +16,7 @@ use twilly_cli::{
     prompt_user_selection, ActionChoice, DateRange,
 };
 
+/// Actions general to Logs.
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum LogsAction {
     #[strum(to_string = "Get Log")]
@@ -26,12 +27,26 @@ pub enum LogsAction {
     Exit,
 }
 
+/// Actions for a specific Log Resource.
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum LogAction {
     #[strum(to_string = "List details")]
     ListDetails,
     Back,
     Exit,
+}
+
+/// Quick select time range options.
+#[derive(Debug, Clone, Display, EnumIter, EnumString)]
+pub enum TimeRangeOptions {
+    #[strum(to_string = "Last 30 minutes")]
+    ThirtyMinutes,
+    #[strum(to_string = "Last hour")]
+    LastHour,
+    #[strum(to_string = "Last 6 hours")]
+    LastSixHours,
+    Today,
+    Custom,
 }
 
 pub async fn choose_log_action(
@@ -107,63 +122,142 @@ pub async fn choose_log_action(
                     }
                 }
                 LogsAction::ListLogs => {
-                    let mut start_date: Option<chrono::NaiveDate> = None;
-                    let mut end_date: Option<chrono::NaiveDate> = None;
+                    let utc_now = chrono::Utc::now();
+                    let mut start_date: Option<chrono::DateTime<chrono::Utc>> = None;
+                    let mut end_date: Option<chrono::DateTime<chrono::Utc>> = Some(utc_now);
 
-                    let mut user_filtered_dates = false;
+                    let mut user_selected_time_range = false;
 
-                    let filter_dates_prompt =
-                        Confirm::new("Would you like to filter between specified dates?")
-                            .with_placeholder("N")
-                            .with_default(false);
+                    let time_range_prompt = Confirm::new("Would you like to select a time range?")
+                        .with_placeholder("N")
+                        .with_default(false);
 
-                    if let Some(date_decision) = prompt_user(filter_dates_prompt) {
-                        if date_decision {
-                            user_filtered_dates = true;
-                            let utc_now = chrono::Utc::now();
-                            let utc_30_days_ago = utc_now - chrono::Duration::days(30);
-                            if let Some(user_start_date) = get_date_from_user(
-                                "Choose a start date:",
-                                Some(DateRange {
-                                    minimum_date: chrono::NaiveDate::from_ymd_opt(
-                                        utc_30_days_ago.year(),
-                                        utc_30_days_ago.month(),
-                                        utc_30_days_ago.day(),
-                                    )
-                                    .unwrap(),
-                                    maximum_date: chrono::NaiveDate::from_ymd_opt(
-                                        utc_now.year(),
-                                        utc_now.month(),
-                                        utc_now.day(),
-                                    )
-                                    .unwrap(),
-                                }),
-                            ) {
-                                start_date = Some(user_start_date);
-                                end_date = get_date_from_user(
-                                    "Choose an end date:",
-                                    Some(DateRange {
-                                        minimum_date: chrono::NaiveDate::from_ymd_opt(
-                                            user_start_date.year_ce().1.try_into().unwrap(),
-                                            user_start_date.month0() + 1,
-                                            user_start_date.day0() + 1,
-                                        )
-                                        .unwrap(),
-                                        maximum_date: chrono::NaiveDate::from_ymd_opt(
-                                            utc_now.year(),
-                                            utc_now.month(),
-                                            utc_now.day(),
-                                        )
-                                        .unwrap(),
-                                    }),
-                                );
+                    if let Some(time_range_decision) = prompt_user(time_range_prompt) {
+                        if time_range_decision {
+                            user_selected_time_range = true;
+
+                            let options: Vec<TimeRangeOptions> = TimeRangeOptions::iter().collect();
+                            let time_range_selection_prompt =
+                                Select::new("Select a time range:", options.clone());
+                            if let Some(time_range) =
+                                prompt_user_selection(time_range_selection_prompt)
+                            {
+                                match time_range {
+                                    TimeRangeOptions::ThirtyMinutes => {
+                                        start_date = Some(utc_now - Duration::minutes(30));
+                                    }
+                                    TimeRangeOptions::LastHour => {
+                                        start_date = Some(utc_now - Duration::hours(1));
+                                    }
+                                    TimeRangeOptions::LastSixHours => {
+                                        start_date = Some(utc_now - Duration::hours(6));
+                                    }
+                                    TimeRangeOptions::Today => {
+                                        start_date = Some(
+                                            chrono::DateTime::parse_from_str(
+                                                utc_now
+                                                    .format("%Y-%m-%dT00:00:00%z")
+                                                    .to_string()
+                                                    .as_str(),
+                                                "%Y-%m-%dT%H:%M:%S%z",
+                                            )
+                                            .unwrap()
+                                            .into(),
+                                        );
+                                    }
+                                    TimeRangeOptions::Custom => {
+                                        let utc_30_days_ago = utc_now - chrono::Duration::days(30);
+                                        if let Some(user_start_date) = get_date_from_user(
+                                            "Choose a start date:",
+                                            Some(DateRange {
+                                                minimum_date: chrono::NaiveDate::from_ymd_opt(
+                                                    utc_30_days_ago.year(),
+                                                    utc_30_days_ago.month(),
+                                                    utc_30_days_ago.day(),
+                                                )
+                                                .unwrap(),
+                                                maximum_date: chrono::NaiveDate::from_ymd_opt(
+                                                    utc_now.year(),
+                                                    utc_now.month(),
+                                                    utc_now.day(),
+                                                )
+                                                .unwrap(),
+                                            }),
+                                        ) {
+                                            dbg!(user_start_date);
+                                            start_date = Some(
+                                                chrono::DateTime::parse_from_str(
+                                                    user_start_date
+                                                        .format("%Y-%m-%dT00:00:00+0000")
+                                                        .to_string()
+                                                        .as_str(),
+                                                    "%Y-%m-%dT%H:%M:%S%z",
+                                                )
+                                                .unwrap()
+                                                .into(),
+                                            );
+                                            if let Some(user_end_date) = get_date_from_user(
+                                                "Choose an end date:",
+                                                Some(DateRange {
+                                                    minimum_date: chrono::NaiveDate::from_ymd_opt(
+                                                        user_start_date
+                                                            .year_ce()
+                                                            .1
+                                                            .try_into()
+                                                            .unwrap(),
+                                                        user_start_date.month0() + 1,
+                                                        user_start_date.day0() + 1,
+                                                    )
+                                                    .unwrap(),
+                                                    maximum_date: chrono::NaiveDate::from_ymd_opt(
+                                                        utc_now.year(),
+                                                        utc_now.month(),
+                                                        utc_now.day(),
+                                                    )
+                                                    .unwrap(),
+                                                }),
+                                            ) {
+                                                if user_end_date == utc_now.date_naive() {
+                                                    // If the user selected the current day we'll assume its up to the current time
+                                                    // also. So here we use the UTC now to do so.
+                                                    end_date = Some(
+                                                        chrono::DateTime::parse_from_str(
+                                                            utc_now
+                                                                .format("%Y-%m-%dT%H:%M:%S%z")
+                                                                .to_string()
+                                                                .as_str(),
+                                                            "%Y-%m-%dT%H:%M:%S%z",
+                                                        )
+                                                        .unwrap()
+                                                        .into(),
+                                                    )
+                                                } else {
+                                                    // If the user did *not* select the current day then it's definitely in
+                                                    // the past so we can assume they want to fetch that full day. We manually
+                                                    // set the hours as such here.
+                                                    end_date = Some(
+                                                        chrono::DateTime::parse_from_str(
+                                                            user_end_date
+                                                                .format("%Y-%m-%dT23:59:59+0000")
+                                                                .to_string()
+                                                                .as_str(),
+                                                            "%Y-%m-%dT%H:%M:%S%z",
+                                                        )
+                                                        .unwrap()
+                                                        .into(),
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
 
                     // Only continue if the user filtered by dates *and* provided both options.
                     // If they didn't then they must of cancelled the operation.
-                    if !user_filtered_dates || (start_date.is_some() && end_date.is_some()) {
+                    if !user_selected_time_range || (start_date.is_some() && end_date.is_some()) {
                         let filter_function =
                             Confirm::new("Would you like to filter by a specific function?")
                                 .with_placeholder("N")
