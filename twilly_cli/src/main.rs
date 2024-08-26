@@ -1,5 +1,6 @@
 mod account;
 mod conversation;
+mod serverless;
 mod sync;
 
 use std::{process, str::FromStr};
@@ -84,6 +85,9 @@ async fn main() {
                 conversation::choose_conversation_action(&twilio).await
             }
             twilly::SubResource::Sync => sync::choose_sync_resource(&twilio).await,
+            twilly::SubResource::Serverless => {
+                serverless::choose_serverless_resource(&twilio).await
+            }
         }
     }
 }

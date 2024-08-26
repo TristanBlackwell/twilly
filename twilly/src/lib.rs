@@ -36,6 +36,7 @@ twilio.conversations().delete(&conversation_sid);
 pub mod account;
 pub mod conversation;
 pub mod participant_conversation;
+pub mod serverless;
 pub mod sync;
 
 use std::fmt::{self};
@@ -44,6 +45,7 @@ use account::Accounts;
 use conversation::Conversations;
 use reqwest::{header::HeaderMap, Method, Response};
 use serde::{Deserialize, Serialize};
+use serverless::Serverless;
 use strum_macros::{Display, EnumIter, EnumString};
 use sync::Sync;
 
@@ -171,6 +173,7 @@ pub enum SubResource {
     Account,
     Conversations,
     Sync,
+    Serverless,
 }
 
 impl Client {
@@ -309,6 +312,10 @@ impl Client {
     /// Sync related functions.
     pub fn sync(&self) -> Sync {
         Sync { client: self }
+    }
+
+    pub fn serverless(&self) -> Serverless {
+        Serverless { client: self }
     }
 }
 

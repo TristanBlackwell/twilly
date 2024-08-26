@@ -81,8 +81,7 @@ impl<'a> ParticipantConversations<'a> {
     ///
     /// Takes optional parameters:
     /// - `identity` - The identity used for the participant (used for participants using the Conversations SDK).
-    /// - `address` - Or the address the participant is communicating on. This typically links directly
-    /// to `messaging_binding.address` of a Conversation.
+    /// - `address` - Or the address the participant is communicating on. This typically links directly to `messaging_binding.address` of a Conversation.
     pub async fn list(
         &self,
         identity: Option<String>,
