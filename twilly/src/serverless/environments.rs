@@ -84,11 +84,11 @@ impl<'a, 'b> Environments<'a, 'b> {
             .await
     }
 
-    /// [Lists Sync Documents](https://www.twilio.com/docs/sync/api/document-resource#read-multiple-document-resources)
+    /// [Lists Environments](https://www.twilio.com/docs/serverless/api/resource/environment#read-multiple-environment-resources)
     ///
-    /// Lists Sync Documents in the Sync Service provided to the `service()`.
+    /// Lists Environments for the Service provided to the `service()` argument.
     ///
-    /// Documents will be _eagerly_ paged until all retrieved.
+    /// Environments will be _eagerly_ paged until all retrieved.
     pub async fn list(&self) -> Result<Vec<ServerlessEnvironment>, TwilioError> {
         let mut environments_page = self
             .client
@@ -179,7 +179,7 @@ impl<'a, 'b> Environment<'a, 'b> {
         }
     }
 
-    /// General Sync Map Item functions.
+    /// General Log functions.
     pub fn logs(&'a self) -> Logs {
         Logs {
             client: self.client,

@@ -17,7 +17,7 @@ pub struct LogsPage {
     meta: PageMeta,
 }
 
-/// A Serverless Environment resource.
+/// A Serverless Environment Log resource.
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct ServerlessLog {
     pub sid: String,

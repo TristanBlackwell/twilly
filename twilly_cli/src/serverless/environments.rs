@@ -10,8 +10,6 @@ use twilly_cli::{get_action_choice_from_user, prompt_user, prompt_user_selection
 
 #[derive(Debug, Clone, Display, EnumIter, EnumString)]
 pub enum Action {
-    // #[strum(to_string = "List Items")]
-    // ListItem,
     #[strum(to_string = "List Details")]
     ListDetails,
     Logs,
