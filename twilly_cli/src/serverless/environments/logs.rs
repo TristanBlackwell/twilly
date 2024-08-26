@@ -338,12 +338,15 @@ pub async fn choose_log_action(
                                                                     .unwrap()
                                                                     .as_bytes(),
                                                                 ) {
-																	Ok(_) => println!("Log file created"),
-																	Err(error) => eprintln!("Failed to fully write to log file. Action aborted: {error}")
+																	Ok(_) => {
+																		println!("Log file created: {}.json", &serverless_environment.sid); 
+																		println!();
+																	},
+																	Err(error) => eprintln!("Failed to fully write to log file. Action aborted: {}", error)
 																}
                                                         }
                                                         Err(error) => eprintln!(
-                                                            "Unable to create log file. Action aborted: {error}"
+                                                            "Unable to create log file. Action aborted: {}", error
                                                         ),
                                                     }
                                                 }

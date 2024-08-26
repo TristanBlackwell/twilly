@@ -5,7 +5,6 @@ Contains Twilio Serverless Environment Logs related functionality.
 */
 
 use crate::{Client, PageMeta, TwilioError};
-use chrono::Utc;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
