@@ -93,8 +93,6 @@ impl<'a, 'b> Logs<'a, 'b> {
             start_date: start_date.map(|sd| sd.format("%Y-%m-%dT%H:%M:%SZ").to_string()),
             end_date: end_date.map(|ed| ed.format("%Y-%m-%dT%H:%M:%SZ").to_string()),
         };
-        dbg!(&params.start_date);
-        dbg!(&params.end_date);
 
         let mut logs_page = self
             .client

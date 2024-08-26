@@ -1,5 +1,5 @@
-use chrono::{Datelike, Duration, TimeZone, Utc};
-use std::process;
+use chrono::{Datelike, Duration};
+use std::{fs::File, io::Write, process};
 
 use inquire::{validator::Validation, Confirm, MultiSelect, Select, Text};
 use strum::IntoEnumIterator;
@@ -130,6 +130,7 @@ pub async fn choose_log_action(
 
                     let time_range_prompt = Confirm::new("Would you like to select a time range?")
                         .with_placeholder("N")
+                        .with_help_message("Will retrieve the last 24 hours by default.")
                         .with_default(false);
 
                     if let Some(time_range_decision) = prompt_user(time_range_prompt) {
@@ -184,7 +185,6 @@ pub async fn choose_log_action(
                                                 .unwrap(),
                                             }),
                                         ) {
-                                            dbg!(user_start_date);
                                             start_date = Some(
                                                 chrono::DateTime::parse_from_str(
                                                     user_start_date
@@ -314,66 +314,123 @@ pub async fn choose_log_action(
                                 } else {
                                     println!("Found {} logs.", number_of_logs);
 
-                                    // Sort date descending (latest first)
-                                    serverless_logs
-                                        .sort_by(|a, b| b.date_created.cmp(&a.date_created));
-
-                                    let mut selected_serverless_log_index: Option<usize> = None;
-                                    loop {
-                                        let selected_serverless_log = if let Some(index) =
-                                            selected_serverless_log_index
-                                        {
-                                            &mut serverless_logs[index]
-                                        } else if let Some(action_choice) =
-                                            get_action_choice_from_user(
-                                                serverless_logs
-                                                    .iter()
-                                                    .map(|log| {
-                                                        format!(
-                                                            "({}) {} - {}",
-                                                            log.sid, log.date_created, log.message
-                                                        )
-                                                    })
-                                                    .collect::<Vec<String>>(),
-                                                "Choose a Serverless Log: ",
-                                            )
-                                        {
-                                            match action_choice {
-                                                ActionChoice::Back => {
-                                                    break;
-                                                }
-                                                ActionChoice::Exit => process::exit(0),
-                                                ActionChoice::Other(choice) => {
-                                                    let serverless_log_position = serverless_logs
-                        .iter()
-                        .position(|list| list.sid == choice[1..35])
-                        .expect("Could not find Serverless Log in existing Serverless Log list");
-
-                                                    selected_serverless_log_index =
-                                                        Some(serverless_log_position);
-                                                    &mut serverless_logs[serverless_log_position]
-                                                }
+                                    if let Some(output_decision) = get_action_choice_from_user(
+                                        vec![String::from("Write to file"), String::from("View")],
+                                        "Select an output: ",
+                                    ) {
+                                        match output_decision {
+                                            ActionChoice::Back => {
+                                                break;
                                             }
-                                        } else {
-                                            break;
-                                        };
+                                            ActionChoice::Exit => process::exit(0),
+                                            ActionChoice::Other(choice) => match choice.as_str() {
+                                                "Write to file" => {
+                                                    match File::create(format!(
+                                                        "{}.json",
+                                                        &serverless_environment.sid
+                                                    )) {
+                                                        Ok(mut file_buffer) => {
+                                                            match file_buffer
+                                                                .write_all(
+                                                                    serde_json::to_string_pretty(
+                                                                        &serverless_logs,
+                                                                    )
+                                                                    .unwrap()
+                                                                    .as_bytes(),
+                                                                ) {
+																	Ok(_) => println!("Log file created"),
+																	Err(error) => eprintln!("Failed to fully write to log file. Action aborted: {error}")
+																}
+                                                        }
+                                                        Err(error) => eprintln!(
+                                                            "Unable to create log file. Action aborted: {error}"
+                                                        ),
+                                                    }
+                                                }
+                                                "View" => {
+                                                    // Sort date descending (latest first)
+                                                    serverless_logs.sort_by(|a, b| {
+                                                        b.date_created.cmp(&a.date_created)
+                                                    });
 
-                                        let options: Vec<LogAction> = LogAction::iter().collect();
-                                        let action_selection_prompt =
-                                            Select::new("Select an action:", options);
-                                        if let Some(action) =
-                                            prompt_user_selection(action_selection_prompt)
-                                        {
-                                            match action {
-                                                LogAction::ListDetails => {
-                                                    println!("{:#?}", selected_serverless_log);
-                                                    println!();
+                                                    let mut selected_serverless_log_index: Option<
+                                                        usize,
+                                                    > = None;
+                                                    loop {
+                                                        let selected_serverless_log = if let Some(
+                                                            index,
+                                                        ) =
+                                                            selected_serverless_log_index
+                                                        {
+                                                            &mut serverless_logs[index]
+                                                        } else if let Some(action_choice) =
+                                                            get_action_choice_from_user(
+                                                                serverless_logs
+                                                                    .iter()
+                                                                    .map(|log| {
+                                                                        format!(
+                                                                            "({}) {} - {}",
+                                                                            log.sid,
+                                                                            log.date_created,
+                                                                            log.message
+                                                                        )
+                                                                    })
+                                                                    .collect::<Vec<String>>(),
+                                                                "Choose a Serverless Log: ",
+                                                            )
+                                                        {
+                                                            match action_choice {
+                                                                ActionChoice::Back => {
+                                                                    break;
+                                                                }
+                                                                ActionChoice::Exit => {
+                                                                    process::exit(0)
+                                                                }
+                                                                ActionChoice::Other(choice) => {
+                                                                    let serverless_log_position = serverless_logs
+									.iter()
+									.position(|list| list.sid == choice[1..35])
+									.expect("Could not find Serverless Log in existing Serverless Log list");
+
+                                                                    selected_serverless_log_index =
+                                                                        Some(
+                                                                            serverless_log_position,
+                                                                        );
+                                                                    &mut serverless_logs
+                                                                        [serverless_log_position]
+                                                                }
+                                                            }
+                                                        } else {
+                                                            break;
+                                                        };
+
+                                                        let options: Vec<LogAction> =
+                                                            LogAction::iter().collect();
+                                                        let action_selection_prompt = Select::new(
+                                                            "Select an action:",
+                                                            options,
+                                                        );
+                                                        if let Some(action) = prompt_user_selection(
+                                                            action_selection_prompt,
+                                                        ) {
+                                                            match action {
+                                                                LogAction::ListDetails => {
+                                                                    println!(
+                                                                        "{:#?}",
+                                                                        selected_serverless_log
+                                                                    );
+                                                                    println!();
+                                                                }
+                                                                LogAction::Back => {
+                                                                    break;
+                                                                }
+                                                                LogAction::Exit => process::exit(0),
+                                                            }
+                                                        }
+                                                    }
                                                 }
-                                                LogAction::Back => {
-                                                    break;
-                                                }
-                                                LogAction::Exit => process::exit(0),
-                                            }
+                                                _ => println!("Unknown action '{}'", choice),
+                                            },
                                         }
                                     }
                                 }

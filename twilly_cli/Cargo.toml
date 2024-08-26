@@ -24,3 +24,4 @@ confy = "0.6.0"
 openssl = { version = "0.10", features = ["vendored"] }
 tokio = { version = "1.37.0", features = ["macros", "time"] }
 regex = { version = "1.10.4" }
+serde_json = "1.0.127"
