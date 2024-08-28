@@ -47,7 +47,7 @@ cargo r
 
 ```sh
 # Download the packaged binary
-wget -q https://github.com/TristanBlackwell/twilly/releases/download/v0.1.1/twilly_cli-v0.2.0-x86_64-unknown-linux-musl.tar.gz
+wget -q https://github.com/TristanBlackwell/twilly/releases/download/v0.2.0/twilly_cli-v0.2.0-x86_64-unknown-linux-musl.tar.gz
 
 # Unpack
 tar xf twilly_cli-v0.2.0-x86_64-unknown-linux-musl.tar.gz
