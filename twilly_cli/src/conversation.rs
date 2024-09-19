@@ -33,7 +33,6 @@ pub enum Action {
     Exit,
 }
 
-#[allow(clippy::println_empty_string)]
 pub async fn choose_conversation_action(twilio: &Client) {
     let options: Vec<Action> = Action::iter().collect();
 
@@ -110,7 +109,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                             "A Conversation with SID '{}' was not found.",
                                             &conversation_sid
                                         );
-                                        println!("");
+                                        println!();
                                     } else {
                                         panic!("{}", twilio_error);
                                     }
@@ -596,7 +595,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                     }
 
                     println!("All active conversations closed.");
-                    println!("");
+                    println!();
                     return;
                 }
                 Action::DeleteConversation => {
@@ -655,7 +654,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                     }
 
                                     println!("All conversations deleted.");
-                                    println!("");
+                                    println!();
                                     return;
                                 }
                             }
@@ -663,7 +662,7 @@ pub async fn choose_conversation_action(twilio: &Client) {
                     }
 
                     println!("Operation canceled. No changes were made.");
-                    println!("");
+                    println!();
                 }
                 Action::Back => {
                     break;
@@ -722,7 +721,6 @@ async fn close_conversation(twilio: &Client, sid: &str) {
 
 /// Prompts the user for confirmation before deleting the conversation with
 /// the SID provided. Will panic if the delete operation fails.
-#[allow(clippy::println_empty_string)]
 async fn delete_conversation(twilio: &Client, sid: &str) {
     let confirmation_prompt = Confirm::new("Are you sure you wish to delete the Conversation?")
         .with_placeholder("N")
@@ -733,13 +731,13 @@ async fn delete_conversation(twilio: &Client, sid: &str) {
             match twilio.conversations().delete(sid).await {
                 Ok(_) => {
                     println!("Conversation deleted.");
-                    println!("");
+                    println!();
                 }
                 Err(error) => match error.kind {
                     ErrorKind::TwilioError(twilio_error) => {
                         if twilio_error.status == 404 {
                             println!("A Conversation with SID '{}' was not found.", &sid);
-                            println!("");
+                            println!();
                         } else {
                             panic!("{}", twilio_error)
                         }
