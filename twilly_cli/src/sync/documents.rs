@@ -16,7 +16,6 @@ pub enum Action {
     Exit,
 }
 
-#[allow(clippy::println_empty_string)]
 pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService) {
     let options: Vec<Action> = Action::iter().collect();
 
@@ -100,7 +99,7 @@ pub async fn choose_document_action(twilio: &Client, sync_service: &SyncService)
                                             "A Document with SID '{}' was not found.",
                                             &document_sid
                                         );
-                                        println!("");
+                                        println!();
                                     } else {
                                         panic!("{}", twilio_error);
                                     }

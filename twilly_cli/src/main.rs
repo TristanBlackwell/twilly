@@ -92,20 +92,19 @@ async fn main() {
     }
 }
 
-#[allow(clippy::println_empty_string)]
 fn print_welcome_message() {
-    println!("");
-    println!("");
-    println!("");
+    println!();
+    println!();
+    println!();
     println!(
-        " _____          _ _ _          ____            _
-|_   _|_      _(_) (_) ___    |  _ \\ _   _ ___| |_
-  | | \\ \\ /\\ / / | | |/ _ \\   | |_) | | | / __| __|
-  | |  \\ V  V /| | | | (_) |  |  _ <| |_| \\__ \\ |_
-  |_|   \\_/\\_/ |_|_|_|\\___/___|_| \\_\\\\__,_|___/\\__|
-                         |_____|                   "
+        "___________       .__.__  .__         
+\\__    ___/_  _  _|__|  | |  | ___.__.
+  |    |  \\ \\/ \\/ /  |  | |  |<   |  |
+  |    |   \\     /|  |  |_|  |_\\___  |
+  |____|    \\/\\_/ |__|____/____/ ____|
+                               \\/     "
     );
-    println!("");
+    println!();
     println!("Welcome to Twilly! I'm here to help you interact with Twilio!");
-    println!("");
+    println!();
 }

@@ -290,7 +290,6 @@ pub async fn choose_account_action(twilio: &Client) {
     }
 }
 
-#[allow(clippy::println_empty_string)]
 async fn change_account_name(twilio: &Client, account_sid: &str) {
     let friendly_name_prompt =
         Text::new("Provide a name:").with_validator(|val: &str| match !val.is_empty() {
@@ -307,11 +306,10 @@ async fn change_account_name(twilio: &Client, account_sid: &str) {
             .unwrap_or_else(|error| panic!("{}", error));
 
         println!("{:#?}", updated_account);
-        println!("");
+        println!();
     }
 }
 
-#[allow(clippy::println_empty_string)]
 async fn activate_account(twilio: &Client, account_sid: &str) {
     let confirmation_prompt = Confirm::new("Are you sure you wish to activate this account?")
         .with_placeholder("N")
