@@ -124,7 +124,7 @@ pub async fn choose_log_action(
                 LogsAction::ListLogs => {
                     let utc_now = chrono::Utc::now();
                     let mut start_date: Option<chrono::DateTime<chrono::Utc>> = None;
-                    let mut end_date: Option<chrono::DateTime<chrono::Utc>> = Some(utc_now);
+                    let mut end_date: Option<chrono::DateTime<chrono::Utc>> = None;
 
                     let mut user_selected_time_range = false;
 
@@ -313,6 +313,7 @@ pub async fn choose_log_action(
                                     println!();
                                 } else {
                                     println!("Found {} logs.", number_of_logs);
+                                    println!();
 
                                     if let Some(output_decision) = get_action_choice_from_user(
                                         vec![String::from("Write to file"), String::from("View")],
