@@ -31,21 +31,21 @@ pub struct Conversation {
     pub sid: String,
     pub account_sid: String,
     pub chat_service_sid: String,
-    pub messaging_service_sid: String,
+    pub messaging_service_sid: Option<String>,
     pub unique_name: Option<String>,
     pub friendly_name: Option<String>,
     pub date_created: String,
     pub date_updated: String,
-    pub state: State,
+    pub state: Option<State>,
     pub url: String,
     pub attributes: String,
-    pub timers: Timers,
+    pub timers: Option<Timers>,
     pub links: Links,
 }
 
 impl fmt::Display for Conversation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} - {}", self.sid, self.state)
+        write!(f, "{} - {:?}", self.sid, self.state)
     }
 }
 
