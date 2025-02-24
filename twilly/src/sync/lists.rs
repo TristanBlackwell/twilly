@@ -190,7 +190,7 @@ impl<'a, 'b> List<'a, 'b> {
     /// Functions relating to a known Sync List Item.
     ///
     /// Takes in the key of the Sync List Item to perform actions against.
-    pub fn listitem(&'a self, index: &'b u32) -> ListItem {
+    pub fn listitem(&self, index: &'b u32) -> ListItem {
         ListItem {
             client: self.client,
             service_sid: self.service_sid,
@@ -200,7 +200,7 @@ impl<'a, 'b> List<'a, 'b> {
     }
 
     /// General Sync Map Item functions.
-    pub fn listitems(&'a self) -> ListItems {
+    pub fn listitems(&self) -> ListItems {
         ListItems {
             client: self.client,
             service_sid: self.service_sid,

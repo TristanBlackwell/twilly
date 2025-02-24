@@ -173,7 +173,7 @@ impl<'a, 'b> Service<'a, 'b> {
     /// Actions relating to a known Service Environment.
     ///
     /// Takes in the SID of the Environment to perform actions against.
-    pub fn environment(&'a self, sid: &'b str) -> Environment {
+    pub fn environment(&self, sid: &'b str) -> Environment {
         Environment {
             client: self.client,
             service_sid: self.sid,
@@ -182,7 +182,7 @@ impl<'a, 'b> Service<'a, 'b> {
     }
 
     /// General Service Environment actions.
-    pub fn environments(&'a self) -> Environments {
+    pub fn environments(&self) -> Environments {
         Environments {
             client: self.client,
             service_sid: self.sid,

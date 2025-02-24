@@ -194,7 +194,7 @@ impl<'a, 'b> Service<'a, 'b> {
     /// Functions relating to a known Sync Document.
     ///
     /// Takes in the SID of the Sync Document to perform actions against.
-    pub fn document(&'a self, sid: &'b str) -> Document {
+    pub fn document(&self, sid: &'b str) -> Document {
         Document {
             client: self.client,
             service_sid: self.sid,
@@ -203,7 +203,7 @@ impl<'a, 'b> Service<'a, 'b> {
     }
 
     /// General Sync Document functions.
-    pub fn documents(&'a self) -> Documents {
+    pub fn documents(&self) -> Documents {
         Documents {
             client: self.client,
             service_sid: self.sid,
@@ -213,7 +213,7 @@ impl<'a, 'b> Service<'a, 'b> {
     /// Functions relating to a known Sync Map.
     ///
     /// Takes in the SID of the Sync Map to perform actions against.
-    pub fn map(&'a self, sid: &'b str) -> Map {
+    pub fn map(&self, sid: &'b str) -> Map {
         Map {
             client: self.client,
             service_sid: self.sid,
@@ -222,7 +222,7 @@ impl<'a, 'b> Service<'a, 'b> {
     }
 
     /// General Sync Map functions.
-    pub fn maps(&'a self) -> Maps {
+    pub fn maps(&self) -> Maps {
         Maps {
             client: self.client,
             service_sid: self.sid,
@@ -230,7 +230,7 @@ impl<'a, 'b> Service<'a, 'b> {
     }
 
     /// General Sync List functions.
-    pub fn lists(&'a self) -> Lists {
+    pub fn lists(&self) -> Lists {
         Lists {
             client: self.client,
             service_sid: self.sid,
@@ -240,7 +240,7 @@ impl<'a, 'b> Service<'a, 'b> {
     /// Functions relating to a known Sync List.
     ///
     /// Takes in the SID of the Sync List to perform actions against.
-    pub fn list(&'a self, sid: &'b str) -> List {
+    pub fn list(&self, sid: &'b str) -> List {
         List {
             client: self.client,
             service_sid: self.sid,

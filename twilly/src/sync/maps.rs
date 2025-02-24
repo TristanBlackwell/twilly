@@ -190,7 +190,7 @@ impl<'a, 'b> Map<'a, 'b> {
     /// Functions relating to a known Sync Map Item.
     ///
     /// Takes in the key of the Sync Map Item to perform actions against.
-    pub fn mapitem(&'a self, key: &'b str) -> MapItem {
+    pub fn mapitem(&self, key: &'b str) -> MapItem {
         MapItem {
             client: self.client,
             service_sid: self.service_sid,
@@ -200,7 +200,7 @@ impl<'a, 'b> Map<'a, 'b> {
     }
 
     /// General Sync Map Item functions.
-    pub fn mapitems(&'a self) -> MapItems {
+    pub fn mapitems(&self) -> MapItems {
         MapItems {
             client: self.client,
             service_sid: self.service_sid,
