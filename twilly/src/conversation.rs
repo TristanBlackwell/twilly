@@ -45,7 +45,12 @@ pub struct Conversation {
 
 impl fmt::Display for Conversation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} - {:?}", self.sid, self.state)
+        write!(
+            f,
+            "{} - {}",
+            self.sid,
+            self.state.as_ref().map_or("None", |s| s.as_ref())
+        )
     }
 }
 

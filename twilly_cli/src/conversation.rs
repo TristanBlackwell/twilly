@@ -217,12 +217,11 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                         conversations
                                             .iter()
                                             .map(|conv| match &conv.unique_name {
-                                                Some(unique_name) => format!(
-                                                    "({}) {} - {:?}",
-                                                    conv.sid, unique_name, conv.state
-                                                ),
+                                                Some(unique_name) => {
+                                                    format!("({}) {}", unique_name, conv)
+                                                }
                                                 None => {
-                                                    format!("{} - {:?}", conv.sid, conv.state)
+                                                    format!("{}", conv)
                                                 }
                                             })
                                             .collect::<Vec<String>>(),
