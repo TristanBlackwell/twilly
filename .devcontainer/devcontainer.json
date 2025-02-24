@@ -11,7 +11,8 @@
         "esbenp.prettier-vscode",
         "ms-azuretools.vscode-docker",
         "rust-lang.rust-analyzer",
-        "tamasfe.even-better-toml"
+        "tamasfe.even-better-toml",
+        "fill-labs.dependi"
       ]
     }
   }
