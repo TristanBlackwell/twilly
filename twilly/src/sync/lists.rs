@@ -66,7 +66,7 @@ pub struct Lists<'a, 'b> {
     pub service_sid: &'b str,
 }
 
-impl<'a, 'b> Lists<'a, 'b> {
+impl Lists<'_, '_> {
     /// [Creates a Sync List resource](https://www.twilio.com/docs/sync/api/list-resource#create-a-list-resource)
     ///
     /// Creates a Sync List resource with the provided parameters.
@@ -130,7 +130,7 @@ pub struct List<'a, 'b> {
     pub sid: &'b str,
 }
 
-impl<'a, 'b> List<'a, 'b> {
+impl<'b> List<'_, 'b> {
     /// [Gets a Sync List](https://www.twilio.com/docs/sync/api/list-resource#fetch-a-list-resource)
     ///
     /// Targets the Sync Service provided to the `service()` argument and fetches the List

@@ -76,7 +76,7 @@ pub struct Services<'a> {
     pub client: &'a Client,
 }
 
-impl<'a> Services<'a> {
+impl Services<'_> {
     /// [Creates a Sync Service](https://www.twilio.com/docs/sync/api/service#create-a-service-resource)
     ///
     /// Creates a Sync Service resource with the provided parameters.
@@ -139,7 +139,7 @@ pub struct Service<'a, 'b> {
     pub sid: &'b str,
 }
 
-impl<'a, 'b> Service<'a, 'b> {
+impl<'b> Service<'_, 'b> {
     /// [Gets a Sync Service](https://www.twilio.com/docs/sync/api/service#fetch-a-service-resource)
     ///
     /// Fetches the Sync Service provided to the `Service()`.

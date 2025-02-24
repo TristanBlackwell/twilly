@@ -130,7 +130,7 @@ pub struct MapItems<'a, 'b> {
     pub map_sid: &'b str,
 }
 
-impl<'a, 'b> MapItems<'a, 'b> {
+impl MapItems<'_, '_> {
     /// [Creates a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#create-a-mapitem-resource)
     ///
     /// Creates a Sync Map Item with the provided parameters.
@@ -211,7 +211,7 @@ pub struct MapItem<'a, 'b> {
     pub key: &'b str,
 }
 
-impl<'a, 'b> MapItem<'a, 'b> {
+impl MapItem<'_, '_> {
     /// [Gets a Sync Map Item](https://www.twilio.com/docs/sync/api/map-item-resource#fetch-a-mapitem-resource)
     ///
     /// Targets the Sync Service provided to the `service()` argument, the Map provided to the `map()`

@@ -126,7 +126,7 @@ pub struct ListParams {
     pub state: Option<State>,
 }
 
-impl<'a> Conversations<'a> {
+impl Conversations<'_> {
     /// [Gets a Conversation](https://www.twilio.com/docs/conversations/api/conversation-resource#fetch-a-conversation-resource)
     ///
     /// Takes in a `sid` argument which can also be the Conversations `uniqueName`.

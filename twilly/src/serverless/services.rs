@@ -63,7 +63,7 @@ pub struct Services<'a> {
     pub client: &'a Client,
 }
 
-impl<'a> Services<'a> {
+impl Services<'_> {
     /// [Creates a Serverless Service](https://www.twilio.com/docs/serverless/api/resource/service#create-a-service-resource)
     ///
     /// Creates a Serverless Service resource with the provided parameters.
@@ -122,7 +122,7 @@ pub struct Service<'a, 'b> {
     pub sid: &'b str,
 }
 
-impl<'a, 'b> Service<'a, 'b> {
+impl<'b> Service<'_, 'b> {
     /// [Gets a Serverless Service](https://www.twilio.com/docs/serverless/api/resource/service#fetch-a-service-resource)
     ///
     /// Fetches the Serverless Service provided to the `Service()`.

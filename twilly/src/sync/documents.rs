@@ -97,7 +97,7 @@ pub struct Documents<'a, 'b> {
     pub service_sid: &'b str,
 }
 
-impl<'a, 'b> Documents<'a, 'b> {
+impl Documents<'_, '_> {
     /// [Creates a Sync Document](https://www.twilio.com/docs/sync/api/document-resource)
     ///
     /// Creates a Sync Document with the provided parameters.
@@ -171,7 +171,7 @@ pub struct Document<'a, 'b> {
     pub sid: &'b str,
 }
 
-impl<'a, 'b> Document<'a, 'b> {
+impl Document<'_, '_> {
     /// [Gets a Sync Document](https://www.twilio.com/docs/sync/api/document-resource#fetch-a-document-resource)
     ///
     /// Targets the Sync Service provided to the `service()` argument and fetches the Document

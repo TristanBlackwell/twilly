@@ -74,7 +74,7 @@ struct ListParams {
     address: Option<String>,
 }
 
-impl<'a> ParticipantConversations<'a> {
+impl ParticipantConversations<'_> {
     /// [Lists Participant Conversations](https://www.twilio.com/docs/conversations/api/participant-conversation-resource#list-all-of-a-participants-conversations)
     ///
     /// This will eagerly fetch *all* conversations relating to a particular identity or address on the Twilio account.

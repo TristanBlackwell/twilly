@@ -60,7 +60,7 @@ pub struct Environments<'a, 'b> {
     pub service_sid: &'b str,
 }
 
-impl<'a, 'b> Environments<'a, 'b> {
+impl Environments<'_, '_> {
     /// [Creates an Environment](https://www.twilio.com/docs/serverless/api/resource/environment#create-an-environment-resource)
     ///
     /// Creates an Environment with the provided parameters.
@@ -130,7 +130,7 @@ pub struct Environment<'a, 'b> {
     pub sid: &'b str,
 }
 
-impl<'a, 'b> Environment<'a, 'b> {
+impl<'b> Environment<'_, 'b> {
     /// [Gets an Environment](https://www.twilio.com/docs/serverless/api/resource/environment#fetch-an-environment-resource)
     ///
     /// Targets the Serverless Service provided to the `service()` argument and fetches the Environment

@@ -66,7 +66,7 @@ pub struct Maps<'a, 'b> {
     pub service_sid: &'b str,
 }
 
-impl<'a, 'b> Maps<'a, 'b> {
+impl Maps<'_, '_> {
     /// [Creates a Sync Map resource](https://www.twilio.com/docs/sync/api/map-resource#create-a-syncmap-resource)
     ///
     /// Creates a Sync Map resource with the provided parameters.
@@ -130,7 +130,7 @@ pub struct Map<'a, 'b> {
     pub sid: &'b str,
 }
 
-impl<'a, 'b> Map<'a, 'b> {
+impl<'b> Map<'_, 'b> {
     /// [Gets a Sync Map](https://www.twilio.com/docs/sync/api/map-resource#fetch-a-syncmap-resource)
     ///
     /// Targets the Sync Service provided to the `service()` argument and fetches the Map
