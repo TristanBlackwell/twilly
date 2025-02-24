@@ -1,4 +1,4 @@
-use std::process;
+use std::{process, sync::Arc};
 
 use inquire::{validator::Validation, Confirm, Select, Text};
 use regex::Regex;
@@ -45,7 +45,11 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
     println!("Found {} Sync Maps.", sync_maps.len());
 
     let mut selected_sync_map_index: Option<usize> = None;
+    let account_name_regex = Arc::new(Regex::new(r"^[a-zA-Z0-9-_]+$").unwrap());
+
     loop {
+        let allowed_chars = Arc::clone(&account_name_regex);
+
         let selected_sync_map = if let Some(index) = selected_sync_map_index {
             &mut sync_maps[index]
         } else if let Some(action_choice) = get_action_choice_from_user(
@@ -89,8 +93,7 @@ pub async fn choose_map_action(twilio: &Client, sync_service: &SyncService) {
                 Action::Rename => {
                     let get_name_prompt = Text::new(
                         "What would you like to rename this map to? Must be supported characters '^[a-zA-Z0-9-_]+$'"
-                    ).with_validator(|val: &str| {
-                        let allowed_chars = Regex::new(r"^[a-zA-Z0-9-_]+$").unwrap();
+                    ).with_validator(move |val: &str| {
                         let trimmed_name = val.trim();
                         if !allowed_chars.is_match(trimmed_name) {
                             return Ok(Validation::Invalid("Name doesn't match required filter '^[a-zA-Z0-9-_]+$'".into()));

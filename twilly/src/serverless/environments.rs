@@ -60,7 +60,7 @@ pub struct Environments<'a, 'b> {
     pub service_sid: &'b str,
 }
 
-impl<'a, 'b> Environments<'a, 'b> {
+impl Environments<'_, '_> {
     /// [Creates an Environment](https://www.twilio.com/docs/serverless/api/resource/environment#create-an-environment-resource)
     ///
     /// Creates an Environment with the provided parameters.
@@ -130,7 +130,7 @@ pub struct Environment<'a, 'b> {
     pub sid: &'b str,
 }
 
-impl<'a, 'b> Environment<'a, 'b> {
+impl<'b> Environment<'_, 'b> {
     /// [Gets an Environment](https://www.twilio.com/docs/serverless/api/resource/environment#fetch-an-environment-resource)
     ///
     /// Targets the Serverless Service provided to the `service()` argument and fetches the Environment
@@ -170,7 +170,7 @@ impl<'a, 'b> Environment<'a, 'b> {
     /// Functions relating to a known Environment Log.
     ///
     /// Takes in the key of the Sync List Item to perform actions against.
-    pub fn log(&'a self, sid: &'b str) -> Log {
+    pub fn log(&self, sid: &'b str) -> Log {
         Log {
             client: self.client,
             service_sid: self.service_sid,
@@ -180,7 +180,7 @@ impl<'a, 'b> Environment<'a, 'b> {
     }
 
     /// General Log functions.
-    pub fn logs(&'a self) -> Logs {
+    pub fn logs(&self) -> Logs {
         Logs {
             client: self.client,
             service_sid: self.service_sid,

@@ -106,7 +106,7 @@ pub struct CreateParams {
     pub friendly_name: Option<String>,
 }
 
-impl<'a> Accounts<'a> {
+impl Accounts<'_> {
     /// [Gets an Account](https://www.twilio.com/docs/iam/api/account#fetch-an-account-resource)
     ///
     /// Takes in an optional `sid` argument otherwise will default to the current config

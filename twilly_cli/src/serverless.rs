@@ -1,6 +1,6 @@
 mod environments;
 
-use std::process;
+use std::{process, sync::Arc};
 
 use inquire::{validator::Validation, Confirm, Select, Text};
 use regex::Regex;
@@ -35,7 +35,11 @@ pub async fn choose_serverless_resource(twilio: &Client) {
     println!("Found {} Serverless Services.", serverless_services.len());
 
     let mut selected_serverless_service_index: Option<usize> = None;
+    let unique_name_regex = Arc::new(Regex::new(r"^[a-zA-Z0-9-_]+$").unwrap());
+
     loop {
+        let allowed_chars = Arc::clone(&unique_name_regex);
+
         let selected_serverless_service = if let Some(index) = selected_serverless_service_index {
             &mut serverless_services[index]
         } else {
@@ -64,9 +68,7 @@ pub async fn choose_serverless_resource(twilio: &Client) {
                                         ))
                                     }
                                 })
-                                .with_validator(|val: &str| {
-                                    let allowed_chars =
-                                        Regex::new(r"^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$").unwrap();
+                                .with_validator(move |val: &str| {
                                     let trimmed_name = val.trim();
                                     if !allowed_chars.is_match(trimmed_name) {
                                         return Ok(Validation::Invalid(

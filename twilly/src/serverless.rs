@@ -20,7 +20,7 @@ impl<'a> Serverless<'a> {
     /// Actions relating to a known Function Service.
     ///
     /// Takes in the SID of the Service to perform actions against.
-    pub fn service<'b: 'a>(&'a self, sid: &'b str) -> Service {
+    pub fn service<'b: 'a>(&self, sid: &'b str) -> Service {
         Service {
             client: self.client,
             sid,
@@ -28,7 +28,7 @@ impl<'a> Serverless<'a> {
     }
 
     /// General Function Service actions.
-    pub fn services(&'a self) -> Services {
+    pub fn services(&self) -> Services {
         Services {
             client: self.client,
         }

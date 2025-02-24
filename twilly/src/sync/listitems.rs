@@ -122,7 +122,7 @@ pub struct ListItems<'a, 'b> {
     pub list_sid: &'b str,
 }
 
-impl<'a, 'b> ListItems<'a, 'b> {
+impl ListItems<'_, '_> {
     /// [Creates a Sync List Item](https://www.twilio.com/docs/sync/api/listitem-resource#create-a-listitem-resource)
     ///
     /// Creates a Sync List Item with the provided parameters.
@@ -202,7 +202,7 @@ pub struct ListItem<'a, 'b> {
     pub index: &'b u32,
 }
 
-impl<'a, 'b> ListItem<'a, 'b> {
+impl ListItem<'_, '_> {
     /// [Gets a Sync List Item](https://www.twilio.com/docs/sync/api/listitem-resource#fetch-a-listitem-resource)
     ///
     /// Targets the Sync Service provided to the `service()` argument, the List provided to the `list()`

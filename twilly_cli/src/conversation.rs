@@ -217,12 +217,11 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                         conversations
                                             .iter()
                                             .map(|conv| match &conv.unique_name {
-                                                Some(unique_name) => format!(
-                                                    "({}) {} - {}",
-                                                    conv.sid, unique_name, conv.state
-                                                ),
+                                                Some(unique_name) => {
+                                                    format!("({}) {}", unique_name, conv)
+                                                }
                                                 None => {
-                                                    format!("{} - {}", conv.sid, conv.state)
+                                                    format!("{}", conv)
                                                 }
                                             })
                                             .collect::<Vec<String>>(),
@@ -250,7 +249,15 @@ pub async fn choose_conversation_action(twilio: &Client) {
                                         break;
                                     };
 
-                                    match selected_conversation.state {
+                                    if selected_conversation.state.is_none() {
+                                        eprintln!(
+                                            "Conversation {} had an unknown state.",
+                                            selected_conversation.sid
+                                        );
+                                        break;
+                                    }
+
+                                    match selected_conversation.state.clone().unwrap() {
                                         State::Closed => loop {
                                             if let Some(conversation_action) =
                                                 get_action_choice_from_user(

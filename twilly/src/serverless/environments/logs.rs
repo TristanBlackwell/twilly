@@ -73,7 +73,7 @@ pub struct Logs<'a, 'b> {
     pub environment_sid: &'b str,
 }
 
-impl<'a, 'b> Logs<'a, 'b> {
+impl Logs<'_, '_> {
     /// [Lists Logs of an Environment](https://www.twilio.com/docs/serverless/api/resource/logs#read-multiple-log-resources)
     ///
     /// Lists Logs of the Environment provided to `environment()` under the Serverless Service
@@ -134,7 +134,7 @@ pub struct Log<'a, 'b> {
     pub sid: &'b str,
 }
 
-impl<'a, 'b> Log<'a, 'b> {
+impl Log<'_, '_> {
     /// [Gets an Log](https://www.twilio.com/docs/serverless/api/resource/logs#fetch-a-log-resource)
     ///
     /// Targets the Serverless Service provided to the `service()` argument and the Environment provided to
